@@ -10,7 +10,6 @@ const hostInstitutionSchema = new Schema(
             maxLength: 100,
             required: true,
             trim: true,
-            lowercase: true,
         },
         country: {
             type: String,
@@ -18,7 +17,6 @@ const hostInstitutionSchema = new Schema(
             maxLength: 100,
             required: true,
             trim: true,
-            lowercase: true,
         },
         city: {
             type: String,
@@ -26,7 +24,6 @@ const hostInstitutionSchema = new Schema(
             maxLength: 100,
             required: true,
             trim: true,
-            lowercase: true,
         },
         availableSlots: {
             type: Number,
