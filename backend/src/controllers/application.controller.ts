@@ -219,7 +219,7 @@ export const updateApplication = async (req: Request<{ applicationId: string }>,
         if (req.body.reviewStatus) {
             if (user.role !== 'lecturer') {
                 return res.status(403).json({
-                    result: 'failed',
+                    result: 'fa`iled',
                     message: 'Only lecturers can review applications.',
                 });
             }
