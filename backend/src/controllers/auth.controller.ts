@@ -6,10 +6,17 @@ export const login = async (req: Request, res: Response) => {
     try{
         const email = req.body.email;
         const password = req.body.password;
-
+        
         if (
             typeof email !== 'string' ||
-            typeof password !== 'string' ||
+            typeof password !== 'string'
+        ) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Email and password must be strings.',
+            });
+        }
+        if (
             !email.trim() ||
             !password.trim()
         ) {
