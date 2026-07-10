@@ -1,8 +1,14 @@
 import express from "express";
-import hostInstitutionController from '../controllers/host-institution.controller';
+
+import { authenticate } from '../middlewares/auth.middleware';
+import { getHostInstitutions } from '../controllers/host-institution.controller';
 
 const hostInstitutionRoutes = express.Router();
 
-hostInstitutionRoutes.get('/', hostInstitutionController);
+hostInstitutionRoutes.get(
+    '/',
+    authenticate,
+    getHostInstitutions
+);
 
 export default hostInstitutionRoutes;
