@@ -1,7 +1,6 @@
 import type { Request, Response } from 'express';
 
 import { findUserById } from '../services/user.service';
-import { userInfo } from 'node:os';
 
 export const getCurrentUser = async (req: Request, res: Response) => {
     try {
@@ -28,7 +27,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
             data: user
         })
 
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Failed to retrieve current user:', error);
 
         return res.status(500).json({
