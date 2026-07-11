@@ -1,0 +1,219 @@
+.page {
+    width: 100%;
+    max-width: 1150px;
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 40px;
+    box-sizing: border-box;
+}
+
+.page-header {
+    margin-bottom: 24px;
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: 32px;
+}
+
+.review-card {
+    margin-bottom: 24px;
+    padding: 24px;
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: none;
+}
+
+.review-card h2 {
+    margin: 0 0 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eeeeee;
+    font-size: 21px;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 30px;
+    margin: 0;
+}
+
+.detail-grid dt {
+    margin-bottom: 6px;
+    color: #666666;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.detail-grid dd {
+    margin: 0;
+    font-size: 16px;
+}
+
+.reason-text {
+    margin: 0;
+    line-height: 1.6;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 13px 10px;
+    border-bottom: 1px solid #dddddd;
+    text-align: left;
+    font-size: 14px;
+}
+
+th {
+    background: #fafafa;
+    font-weight: 700;
+}
+
+.decision-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.decision-button {
+    padding: 10px 18px;
+    border: 1px solid #c7003d;
+    border-radius: 5px;
+    background: #ffffff;
+    color: #111111;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.decision-button:hover {
+    background: #fff2f6;
+}
+
+.decision-button.selected {
+    background: #c7003d;
+    color: #ffffff;
+}
+
+.button {
+    padding: 9px 16px;
+    border-radius: 5px;
+    box-shadow: none;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.button-primary {
+    border: 1px solid #ac0033;
+    background: #ac0033;
+    color: #ffffff;
+}
+
+.button-secondary {
+    border: 1px solid #ac0033;
+    background: #ffffff;
+    color: #ac0033;
+}
+
+.button-approve {
+    border: 1px solid #317742;
+    background: #ffffff;
+    color: #317742;
+}
+
+.button-reject {
+    border: 1px solid #a12626;
+    background: #ffffff;
+    color: #a12626;
+}
+
+.button-approve.selected {
+    background: #317742;
+    color: #ffffff;
+}
+
+.button-reject.selected {
+    background: #a12626;
+    color: #ffffff;
+}
+
+.form-field label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.form-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #b8b8b8;
+    border-radius: 5px;
+    box-sizing: border-box;
+    box-shadow: none;
+    resize: vertical;
+    font: inherit;
+}
+
+.form-field textarea:focus {
+    border-color: #ac0033;
+    outline: none;
+}
+
+.field-error {
+    margin: 6px 0 0;
+    color: #9b1c1c;
+    font-size: 13px;
+}
+
+.file-link {
+    color: #ac0033;
+    font-weight: 600;
+}
+
+.empty-value,
+.empty-message {
+    color: #777777;
+}
+
+.error-message {
+    padding: 12px;
+    border-radius: 6px;
+    background: #f8dddd;
+    color: #9b1c1c;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 28px;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+@media (max-width: 760px) {
+    .page {
+        padding: 24px;
+    }
+
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    table {
+        min-width: 800px;
+    }
+}

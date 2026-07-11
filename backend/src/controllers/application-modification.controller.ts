@@ -120,7 +120,7 @@ export const createApplicationModification = async (req: Request<{ applicationId
     }
 };
 
-export const getApplicationModifications = async (req: Request<{ applicationId: string }>, res: Response) => {
+export const getApplicationModificationsByApplication = async (req: Request<{ applicationId: string }>, res: Response) => {
     try {
         const user = req.user;
         const applicationId = req.params.applicationId;
@@ -363,6 +363,58 @@ export const reviewApplicationModification = async (req: Request<{ modificationI
         });
     } catch (error: unknown) {
         console.error('Failed to review application modification:', error);
+
+        return res.status(500).json({
+            result: 'failed',
+            message: 'Internal server error.',
+        });
+    }
+};
+
+export const getPendingApplicationModifications = async (req: Request, res: Response) => {
+    try {
+        const user = req.user;
+
+        if (!user) {
+            return res.status(401).json({
+                result: 'failed',
+                message: 'Authentication is required.',
+            });
+        }
+
+        const applications = await Application.find({
+            referentLecturer: user.userId,
+        }).select('_id');
+
+        const applicationIds = applications.map((application) => application._id);
+
+        const modifications = await ApplicationModification.find({
+            application: {
+                $in: applicationIds,
+            },
+            'review.status': 'pending',
+        })
+            .populate({
+                path: 'application',
+                populate: [
+                    {
+                        path: 'student',
+                        select: 'firstName lastName matriculationNumber',
+                    },
+                    {
+                        path: 'hostInstitution',
+                        select: 'name country city',
+                    },
+                ],
+            })
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            result: 'success',
+            data: modifications,
+        });
+    } catch (error: unknown) {
+        console.error('Failed to retrieve application modifications:', error);
 
         return res.status(500).json({
             result: 'failed',

@@ -1,0 +1,106 @@
+<main class="page">
+    <div class="page-top">
+        <nav class="title-tabs">
+            <a
+                routerLink="/applications"
+                routerLinkActive="active-tab"
+                [routerLinkActiveOptions]="{ exact: true }"
+                class="page-tab"
+            >
+                Applications
+            </a>
+
+            <a
+                routerLink="/modifications"
+                routerLinkActive="active-tab"
+                class="page-tab"
+            >
+                Review Modification Requests
+            </a>
+        </nav>
+    </div>
+
+    @if (isLoading) {
+        <p class="message">Loading Review Requests...</p>
+    } @else if (errorMessage) {
+        <p class="error-message">{{ errorMessage }}</p>
+    } @else {
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Created</th>
+                        <th>Student Name</th>
+                        <th>Matriculation Number</th>
+                        <th>Academic Year</th>
+                        <th>Mobility Period</th>
+                        <th>Host Institution</th>
+                        <th>Review Type</th>
+                        <th>Application Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @for (request of reviewRequests; track request.type + '-' + request.id) {
+                        <tr>
+                            <td>{{ request.createdAt | date: 'dd.MM.yyyy' }}</td>
+
+                            <td>
+                                {{ getFullName(
+                                    request.student.firstName,
+                                    request.student.lastName
+                                ) }}
+                            </td>
+
+                            <td>
+                                {{ request.student.matriculationNumber ?? '-' }}
+                            </td>
+
+                            <td>{{ request.academicYear }}</td>
+
+                            <td>
+                                {{ getMobilityPeriodLabel(request.expectedMobilityPeriod) }}
+                            </td>
+
+                            <td>{{ request.hostInstitutionName }}</td>
+
+                            <td>
+                                <span
+                                    class="badge"
+                                    [class.badge-initial]="request.type === 'initial_application'"
+                                    [class.badge-modification]="request.type === 'mobility_modification'"
+                                    [class.badge-results]="request.type === 'exam_results'"
+                                >
+                                    {{ getReviewTypeLabel(request.type) }}
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="badge badge-status">
+                                    {{ getApplicationStatusLabel(request.applicationStatus) }}
+                                </span>
+                            </td>
+
+                            <td>
+                                <a
+                                    [routerLink]="request.reviewLink"
+                                    [queryParams]="request.reviewQueryParams"
+                                    class="button button-secondary"
+                                >
+                                    Review
+                                </a>
+                            </td>
+                        </tr>
+                    } @empty {
+                        <tr>
+                            <td colspan="9" class="empty-message">
+                                No Review Requests Found.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</main>

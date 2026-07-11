@@ -1,7 +1,7 @@
 import express from "express";
 
 import { authenticate, authorize } from '../middlewares/auth.middleware';
-import { getApplicationModificationDetail, reviewApplicationModification } from '../controllers/application-modification.controller';
+import { getPendingApplicationModifications, getApplicationModificationDetail, reviewApplicationModification } from '../controllers/application-modification.controller';
 
 const applicationModificationRoutes = express.Router();
 
@@ -32,6 +32,13 @@ applicationModificationRoutes.patch(
     authenticate,
     authorize('lecturer'),
     reviewApplicationModification
+);
+
+applicationModificationRoutes.get(
+    '/',
+    authenticate,
+    authorize('lecturer'),
+    getPendingApplicationModifications
 );
 
 export default applicationModificationRoutes;

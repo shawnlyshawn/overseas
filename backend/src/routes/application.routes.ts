@@ -3,7 +3,7 @@ import multer from "multer";
 
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { closeApplication, createNewApplication, getApplicationDetail, getApplications, reviewApplication, reviewExamResults, submitExamResults, updateMobilityDates, verifyPreDeparture } from '../controllers/application.controller';
-import { createApplicationModification, getApplicationModifications } from '../controllers/application-modification.controller';
+import { createApplicationModification, getApplicationModificationsByApplication } from '../controllers/application-modification.controller';
 
 const applicationRoutes = express.Router();
 const storage = multer.diskStorage({
@@ -36,16 +36,6 @@ applicationRoutes.post(
     upload.single('learningAgreement'),
     createNewApplication
 );
-
-// applicationRoutes.patch(
-//     '/:applicationId',
-//     authenticate,
-//     upload.fields([
-//         { name: 'learningAgreement', maxCount: 1 },
-//         { name: 'transcriptOfRecords', maxCount: 1 },
-//     ]),
-//     updateApplication
-// );
 
 applicationRoutes.patch(
     '/:applicationId/application-review',
@@ -80,7 +70,7 @@ applicationRoutes.get(
     '/:applicationId/application-modifications',
     authenticate,
     authorize('student', 'lecturer'),
-    getApplicationModifications
+    getApplicationModificationsByApplication
 );
 
 applicationRoutes.patch(

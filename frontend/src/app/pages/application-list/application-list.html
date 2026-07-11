@@ -1,0 +1,176 @@
+<!-- frontend/src/app/pages/application-list/application-list.html -->
+
+<section class="page">
+    <div class="page-top">
+        @if (isLecturer()) {
+            <nav class="title-tabs">
+                <a
+                    routerLink="/applications"
+                    routerLinkActive="active-tab"
+                    [routerLinkActiveOptions]="{ exact: true }"
+                    class="page-tab"
+                >
+                    Applications
+                </a>
+
+                <a
+                    routerLink="/modifications"
+                    routerLinkActive="active-tab"
+                    class="page-tab"
+                >
+                    Review Modification Requests
+                </a>
+            </nav>
+        } @else if (isOfficeStaff()) {
+            <nav class="title-tabs">
+                <a
+                    routerLink="/applications"
+                    routerLinkActive="active-tab"
+                    [routerLinkActiveOptions]="{ exact: true }"
+                    class="page-tab"
+                >
+                    Applications
+                </a>
+
+                <a
+                    routerLink="/phase-updates"
+                    routerLinkActive="active-tab"
+                    class="page-tab"
+                >
+                    Update Phases
+                </a>
+            </nav>
+        } @else {
+            <h1>Applications</h1>
+        }
+
+        @if (isStudent()) {
+            <a routerLink="/applications/new" class="button button-primary">
+                New Application
+            </a>
+        }
+    </div>
+
+    @if (isLoading) {
+        <p class="loading-message">Loading Applications...</p>
+    } @else if (errorMessage) {
+        <p class="error-message">{{ errorMessage }}</p>
+    } @else {
+        <div class="table-wrapper">
+            <table class="application-table">
+                <thead>
+                    <tr>
+                        <th>Created</th>
+
+                        @if (!isStudent()) {
+                            <th>Student Name</th>
+                            <th>Matriculation Number</th>
+                        }
+
+                        <th>Academic Year</th>
+                        <th>Mobility Period</th>
+                        <th>Host Institution</th>
+
+                        @if (isStudent() || isOfficeStaff()) {
+                            <th>Referent Lecturer</th>
+                        }
+
+                        <th>Review Status</th>
+                        <th>Rejection Reason</th>
+                        <th>Application Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @for (application of applications; track application._id) {
+                        <tr>
+                            <td>
+                                {{ application.createdAt | date: 'dd.MM.yyyy' }}
+                            </td>
+
+                            @if (!isStudent()) {
+                                <td>
+                                    {{ getFullName(
+                                        application.student.firstName,
+                                        application.student.lastName
+                                    ) }}
+                                </td>
+
+                                <td>
+                                    {{ application.student.matriculationNumber ?? '-' }}
+                                </td>
+                            }
+
+                            <td>{{ application.academicYear }}</td>
+
+                            <td>
+                                {{ getMobilityPeriodLabel(application.expectedMobilityPeriod) }}
+                            </td>
+
+                            <td>
+                                {{ application.hostInstitution.name }}
+                            </td>
+
+                            @if (isStudent() || isOfficeStaff()) {
+                                <td>
+                                    {{ getFullName(
+                                        application.referentLecturer.firstName,
+                                        application.referentLecturer.lastName
+                                    ) }}
+                                </td>
+                            }
+
+                            <td>
+                                <span
+                                    class="badge"
+                                    [class.badge-not-submitted]="getCurrentReviewStatus(application) === 'not_submitted'"
+                                    [class.badge-pending]="getCurrentReviewStatus(application) === 'pending'"
+                                    [class.badge-approved]="getCurrentReviewStatus(application) === 'approved'"
+                                    [class.badge-rejected]="getCurrentReviewStatus(application) === 'rejected'"
+                                >
+                                    {{ getReviewStatusLabel(getCurrentReviewStatus(application)) }}
+                                </span>
+                            </td>
+
+                            <td>
+                                @if (getCurrentReviewStatus(application) === 'rejected') {
+                                    {{ getCurrentRejectionReason(application) ?? '-' }}
+                                } @else {
+                                    -
+                                }
+                            </td>
+
+                            <td>
+                                <span
+                                    class="badge badge-phase"
+                                    [class.badge-closed]="application.status === 'closed'"
+                                >
+                                    {{ getApplicationStatusLabel(application.status) }}
+                                </span>
+                            </td>
+
+                            <td>
+                                <a
+                                    [routerLink]="['/applications', application._id]"
+                                    class="button button-secondary"
+                                >
+                                    Detail
+                                </a>
+                            </td>
+                        </tr>
+                    } @empty {
+                        <tr>
+                            <td
+                                [attr.colspan]="isStudent() ? 9 : isLecturer() ? 10 : 11"
+                                class="empty-message"
+                            >
+                                No Applications Found.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

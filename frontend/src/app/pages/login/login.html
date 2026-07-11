@@ -1,0 +1,57 @@
+<main class="login-page">
+    <section class="login-card">
+        <div class="login-heading">
+            <p class="eyebrow">Overseas Mobility</p>
+            <h1>Login</h1>
+            <p>Sign in to manage mobility applications.</p>
+        </div>
+
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+            <div class="form-field">
+                <label for="email">Email</label>
+
+                <input
+                    id="email"
+                    type="email"
+                    formControlName="email"
+                    autocomplete="email"
+                    placeholder="name@unive.it"
+                >
+
+                @if (loginForm.controls.email.touched && loginForm.controls.email.hasError('required')) {
+                    <p class="field-error">Email is required.</p>
+                } @else if (loginForm.controls.email.touched && loginForm.controls.email.hasError('email')) {
+                    <p class="field-error">Enter a valid email address.</p>
+                }
+            </div>
+
+            <div class="form-field">
+                <label for="password">Password</label>
+
+                <input
+                    id="password"
+                    type="password"
+                    formControlName="password"
+                    autocomplete="current-password"
+                    placeholder="Password"
+                >
+
+                @if (loginForm.controls.password.touched && loginForm.controls.password.hasError('required')) {
+                    <p class="field-error">Password is required.</p>
+                }
+            </div>
+
+            @if (errorMessage) {
+                <p class="login-error">{{ errorMessage }}</p>
+            }
+
+            <button
+                type="submit"
+                class="login-button"
+                [disabled]="isSubmitting"
+            >
+                {{ isSubmitting ? 'Logging in...' : 'Login' }}
+            </button>
+        </form>
+    </section>
+</main>

@@ -1,0 +1,203 @@
+<main class="page">
+    @if (isLoading) {
+        <p class="message">Loading Modification...</p>
+    } @else if (errorMessage && !modificationLog) {
+        <p class="error-message">{{ errorMessage }}</p>
+    } @else if (modificationLog) {
+        <div class="page-header">
+            <h1>Modification Review</h1>
+        </div>
+
+        <section class="review-card">
+            <h2>General Information</h2>
+
+            <dl class="detail-grid">
+                <div>
+                    <dt>Student Name</dt>
+                    <dd>
+                        {{ getFullName(
+                            modificationLog.requestedBy.firstName,
+                            modificationLog.requestedBy.lastName
+                        ) }}
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Matriculation Number</dt>
+                    <dd>{{ modificationLog.requestedBy.matriculationNumber ?? '-' }}</dd>
+                </div>
+
+                <div>
+                    <dt>Email</dt>
+                    <dd>{{ modificationLog.requestedBy.email }}</dd>
+                </div>
+
+                <div>
+                    <dt>Requested At</dt>
+                    <dd>{{ modificationLog.createdAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="review-card">
+            <h2>Modification Reason</h2>
+            <p class="reason-text">{{ modificationLog.description }}</p>
+        </section>
+
+        <section class="review-card">
+            <h2>Proposed Exam Mappings</h2>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Foreign Course Code</th>
+                            <th>Foreign Course Name</th>
+                            <th>Foreign Credits</th>
+                            <th>Ca' Foscari Course Code</th>
+                            <th>Ca' Foscari Course Name</th>
+                            <th>Ca' Foscari Credits</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @for (mapping of modificationLog.proposedExamMappings; track mapping._id ?? $index) {
+                            <tr>
+                                <td>{{ mapping.foreignCourseCode }}</td>
+                                <td>{{ mapping.foreignCourseName }}</td>
+                                <td>{{ mapping.foreignCourseCredits }}</td>
+                                <td>{{ mapping.caFoscariCourseCode }}</td>
+                                <td>{{ mapping.caFoscariCourseName }}</td>
+                                <td>{{ mapping.caFoscariCourseCredits }}</td>
+                            </tr>
+                        } @empty {
+                            <tr>
+                                <td colspan="6" class="empty-message">
+                                    No Proposed Exam Mappings Found.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="review-card">
+            <h2>Proposed Learning Agreement</h2>
+
+            @if (modificationLog.proposedLearningAgreement) {
+                <a
+                    [href]="'http://localhost:3000' + modificationLog.proposedLearningAgreement.path"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="file-link"
+                >
+                    {{ modificationLog.proposedLearningAgreement.filename }}
+                </a>
+            } @else {
+                <span class="empty-value">No File Uploaded.</span>
+            }
+        </section>
+
+        @if (modificationLog.review.status === 'pending') {
+            <section class="review-card">
+                <h2>Decision</h2>
+
+                <div class="decision-buttons">
+                    <button
+                        type="button"
+                        class="decision-button"
+                        [class.selected]="selectedDecision === 'approved'"
+                        (click)="selectDecision('approved')"
+                    >
+                        Approve
+                    </button>
+
+    <button
+        type="button"
+        class="decision-button"
+        [class.selected]="selectedDecision === 'rejected'"
+        (click)="selectDecision('rejected')"
+    >
+        Reject
+    </button>
+</div>
+
+                @if (selectedDecision === 'rejected') {
+                    <div class="form-field">
+                        <label for="rejectionReason">Rejection Reason</label>
+
+                        <textarea
+                            id="rejectionReason"
+                            rows="5"
+                            [formControl]="rejectionReason"
+                            placeholder="Enter the reason for rejection."
+                        ></textarea>
+
+                        @if (rejectionReason.touched && rejectionReason.hasError('required')) {
+                            <p class="field-error">Rejection reason is required.</p>
+                        }
+
+                        @if (rejectionReason.touched && rejectionReason.hasError('maxlength')) {
+                            <p class="field-error">
+                                Rejection reason must not exceed 500 characters.
+                            </p>
+                        }
+                    </div>
+                }
+            </section>
+        } @else {
+            <section class="review-card">
+                <h2>Review Result</h2>
+
+                <dl class="detail-grid">
+                    <div>
+                        <dt>Status</dt>
+                        <dd>{{ modificationLog.review.status }}</dd>
+                    </div>
+
+                    <div>
+                        <dt>Reviewed At</dt>
+                        <dd>
+                            {{
+                                modificationLog.review.reviewedAt
+                                    ? (modificationLog.review.reviewedAt | date: 'dd.MM.yyyy HH:mm')
+                                    : '-'
+                            }}
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt>Rejection Reason</dt>
+                        <dd>{{ modificationLog.review.rejectionReason ?? '-' }}</dd>
+                    </div>
+                </dl>
+            </section>
+        }
+
+        @if (errorMessage) {
+            <p class="error-message">{{ errorMessage }}</p>
+        }
+
+        <div class="form-actions">
+            <button
+                type="button"
+                class="button button-secondary"
+                (click)="cancel()"
+            >
+                Cancel
+            </button>
+
+            @if (modificationLog.review.status === 'pending') {
+                <button
+                    type="button"
+                    class="button button-primary"
+                    [disabled]="isSubmitting || !selectedDecision"
+                    (click)="submitReview()"
+                >
+                    {{ isSubmitting ? 'Submitting...' : 'Submit Decision' }}
+                </button>
+            }
+        </div>
+    }
+</main>

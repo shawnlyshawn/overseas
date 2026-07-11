@@ -1,0 +1,126 @@
+<main class="page">
+    <div class="page-top">
+        <nav class="title-tabs">
+            <a
+                routerLink="/applications"
+                routerLinkActive="active-tab"
+                [routerLinkActiveOptions]="{ exact: true }"
+                class="page-tab"
+            >
+                Applications
+            </a>
+
+            <a
+                routerLink="/phase-updates"
+                routerLinkActive="active-tab"
+                class="page-tab"
+            >
+                Update Phases
+            </a>
+        </nav>
+    </div>
+
+    @if (isLoading) {
+        <p class="message">Loading Applications...</p>
+    } @else {
+        @if (errorMessage) {
+            <p class="error-message">{{ errorMessage }}</p>
+        }
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Created</th>
+                        <th>Student Name</th>
+                        <th>Matriculation Number</th>
+                        <th>Academic Year</th>
+                        <th>Mobility Period</th>
+                        <th>Host Institution</th>
+                        <th>Referent Lecturer</th>
+                        <th>Current Application Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @for (application of applications; track application._id) {
+                        <tr>
+                            <td>{{ application.createdAt | date: 'dd.MM.yyyy' }}</td>
+
+                            <td>
+                                {{ getFullName(
+                                    application.student.firstName,
+                                    application.student.lastName
+                                ) }}
+                            </td>
+
+                            <td>
+                                {{ application.student.matriculationNumber ?? '-' }}
+                            </td>
+
+                            <td>{{ application.academicYear }}</td>
+
+                            <td>
+                                {{ getMobilityPeriodLabel(application.expectedMobilityPeriod) }}
+                            </td>
+
+                            <td>{{ application.hostInstitution.name }}</td>
+
+                            <td>
+                                {{ getFullName(
+                                    application.referentLecturer.firstName,
+                                    application.referentLecturer.lastName
+                                ) }}
+                            </td>
+
+                            <td>
+                                <span class="status-badge">
+                                    {{ getApplicationStatusLabel(application.status) }}
+                                </span>
+                            </td>
+
+                            <td>
+                                @if (application.status === 'bm_awaiting_staff_verification') {
+                                    <button
+                                        type="button"
+                                        class="button button-primary"
+                                        [disabled]="isProcessing(application._id)"
+                                        (click)="completeBeforeMobility(application._id)"
+                                    >
+                                        {{
+                                            isProcessing(application._id)
+                                                ? 'Processing...'
+                                                : 'Complete Before Mobility'
+                                        }}
+                                    </button>
+                                }
+
+                                @if (application.status === 'am_awaiting_staff_verification') {
+                                    <button
+                                        type="button"
+                                        class="button button-close"
+                                        [disabled]="isProcessing(application._id)"
+                                        (click)="closeApplication(application._id)"
+                                    >
+                                        {{
+                                            isProcessing(application._id)
+                                                ? 'Processing...'
+                                                : 'Close Application'
+                                        }}
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    } @empty {
+                        <tr>
+                            <td colspan="9" class="empty-message">
+                                No Applications Awaiting Staff Verification.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</main>

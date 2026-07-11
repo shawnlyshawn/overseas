@@ -1,0 +1,545 @@
+<main class="page">
+    @if (isLoading) {
+        <p class="loading-message">Loading Application...</p>
+    } @else if (errorMessage) {
+        <p class="error-message">{{ errorMessage }}</p>
+    } @else if (application) {
+        <section class="page-header">
+            <div>
+                <h1>Application Detail</h1>
+            </div>
+
+            @if (!isReviewMode && application.status !== 'closed') {
+                <a
+                    [routerLink]="['/applications', application._id, 'edit']"
+                    class="button button-primary"
+                >
+                    Modify
+                </a>
+            }
+        </section>
+
+        <section class="detail-card">
+            <h2>General Information</h2>
+
+            <dl class="detail-grid">
+                <div>
+                    <dt>Student</dt>
+                    <dd>
+                        {{ getFullName(
+                            application.student.firstName,
+                            application.student.lastName
+                        ) }}
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Matriculation Number</dt>
+                    <dd>{{ application.student.matriculationNumber ?? '-' }}</dd>
+                </div>
+
+                <div>
+                    <dt>Academic Year</dt>
+                    <dd>{{ application.academicYear }}</dd>
+                </div>
+
+                <div>
+                    <dt>Expected Mobility Period</dt>
+                    <dd>
+                        {{ getMobilityPeriodLabel(application.expectedMobilityPeriod) }}
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Host Institution</dt>
+                    <dd>{{ application.hostInstitution.name }}</dd>
+                </div>
+
+                <div>
+                    <dt>Host Institution Location</dt>
+                    <dd>
+                        {{ application.hostInstitution.city }},
+                        {{ application.hostInstitution.country }}
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Referent Lecturer</dt>
+                    <dd>
+                        {{ getFullName(
+                            application.referentLecturer.firstName,
+                            application.referentLecturer.lastName
+                        ) }}
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Application Status</dt>
+                    <dd>
+                        <span
+                            class="badge badge-status"
+                            [class.badge-closed]="application.status === 'closed'"
+                        >
+                            {{ getApplicationStatusLabel(application.status) }}
+                        </span>
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Created At</dt>
+                    <dd>{{ application.createdAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
+                </div>
+
+                <div>
+                    <dt>Last Updated</dt>
+                    <dd>{{ application.updatedAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="detail-card">
+            <h2>Application Review</h2>
+
+            <dl class="detail-grid">
+                <div>
+                    <dt>Review Status</dt>
+                    <dd>
+                        <span
+                            class="badge"
+                            [class.badge-not-submitted]="application.applicationReview.status === 'not_submitted'"
+                            [class.badge-pending]="application.applicationReview.status === 'pending'"
+                            [class.badge-approved]="application.applicationReview.status === 'approved'"
+                            [class.badge-rejected]="application.applicationReview.status === 'rejected'"
+                        >
+                            {{ getReviewStatusLabel(application.applicationReview.status) }}
+                        </span>
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Reviewed At</dt>
+                    <dd>
+                        @if (application.applicationReview.reviewedAt) {
+                            {{ application.applicationReview.reviewedAt | date: 'dd.MM.yyyy HH:mm' }}
+                        } @else {
+                            <span class="empty-value">-</span>
+                        }
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Reviewed By</dt>
+                    <dd>{{ application.applicationReview.reviewedBy ?? '-' }}</dd>
+                </div>
+
+                <div>
+                    <dt>Rejection Reason</dt>
+                    <dd>
+                        @if (application.applicationReview.status === 'rejected') {
+                            {{ application.applicationReview.rejectionReason ?? '-' }}
+                        } @else {
+                            -
+                        }
+                    </dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="detail-card">
+            <h2>Mobility Dates</h2>
+
+            <dl class="detail-grid">
+                <div>
+                    <dt>Arrival Date</dt>
+                    <dd>
+                        @if (application.hostUniversityArrivalDate) {
+                            {{ application.hostUniversityArrivalDate | date: 'dd.MM.yyyy' }}
+                        } @else {
+                            <span class="empty-value">Not Entered</span>
+                        }
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Departure Date</dt>
+                    <dd>
+                        @if (application.hostUniversityDepartureDate) {
+                            {{ application.hostUniversityDepartureDate | date: 'dd.MM.yyyy' }}
+                        } @else {
+                            <span class="empty-value">Not Entered</span>
+                        }
+                    </dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="detail-card">
+            <h2>Documents</h2>
+
+            <dl class="detail-grid">
+                <div>
+                    <dt>Learning Agreement</dt>
+                    <dd>
+                        @if (application.learningAgreement) {
+                            <a
+                                [href]="'http://localhost:3000' + application.learningAgreement.path"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="file-link"
+                            >
+                                {{ application.learningAgreement.filename }}
+                            </a>
+                        } @else {
+                            <span class="empty-value">Not Uploaded</span>
+                        }
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Learning Agreement Uploaded At</dt>
+                    <dd>
+                        @if (application.learningAgreement?.uploadedAt) {
+                            {{ application.learningAgreement?.uploadedAt | date: 'dd.MM.yyyy HH:mm' }}
+                        } @else {
+                            <span class="empty-value">-</span>
+                        }
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Transcript of Records</dt>
+                    <dd>
+                        @if (application.transcriptOfRecords) {
+                            <a
+                                [href]="'http://localhost:3000' + application.transcriptOfRecords.path"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="file-link"
+                            >
+                                {{ application.transcriptOfRecords.filename }}
+                            </a>
+                        } @else {
+                            <span class="empty-value">Not Uploaded</span>
+                        }
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Transcript Uploaded At</dt>
+                    <dd>
+                        @if (application.transcriptOfRecords?.uploadedAt) {
+                            {{ application.transcriptOfRecords?.uploadedAt | date: 'dd.MM.yyyy HH:mm' }}
+                        } @else {
+                            <span class="empty-value">-</span>
+                        }
+                    </dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="detail-card">
+            <h2>Exam Mappings</h2>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Foreign Course Code</th>
+                            <th>Foreign Course Name</th>
+                            <th>Foreign Credits</th>
+                            <th>Ca' Foscari Course Code</th>
+                            <th>Ca' Foscari Course Name</th>
+                            <th>Ca' Foscari Credits</th>
+                            <th>Exam Date</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @for (mapping of application.examMappings; track mapping._id ?? $index) {
+                            <tr>
+                                <td>{{ mapping.foreignCourseCode }}</td>
+                                <td>{{ mapping.foreignCourseName }}</td>
+                                <td>{{ mapping.foreignCourseCredits }}</td>
+                                <td>{{ mapping.caFoscariCourseCode }}</td>
+                                <td>{{ mapping.caFoscariCourseName }}</td>
+                                <td>{{ mapping.caFoscariCourseCredits }}</td>
+                                <td>
+                                    @if (mapping.examDate) {
+                                        {{ mapping.examDate | date: 'dd.MM.yyyy' }}
+                                    } @else {
+                                        <span class="empty-value">-</span>
+                                    }
+                                </td>
+                                <td>{{ mapping.score ?? '-' }}</td>
+                            </tr>
+                        } @empty {
+                            <tr>
+                                <td colspan="8" class="empty-message">
+                                    No Exam Mappings Found.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="detail-card">
+            <h2>Exam Review</h2>
+
+            <dl class="detail-grid">
+                <div>
+                    <dt>Review Status</dt>
+                    <dd>
+                        <span
+                            class="badge"
+                            [class.badge-not-submitted]="application.examReview.status === 'not_submitted'"
+                            [class.badge-pending]="application.examReview.status === 'pending'"
+                            [class.badge-approved]="application.examReview.status === 'approved'"
+                            [class.badge-rejected]="application.examReview.status === 'rejected'"
+                        >
+                            {{ getReviewStatusLabel(application.examReview.status) }}
+                        </span>
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Reviewed At</dt>
+                    <dd>
+                        @if (application.examReview.reviewedAt) {
+                            {{ application.examReview.reviewedAt | date: 'dd.MM.yyyy HH:mm' }}
+                        } @else {
+                            <span class="empty-value">-</span>
+                        }
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Reviewed By</dt>
+                    <dd>{{ application.examReview.reviewedBy ?? '-' }}</dd>
+                </div>
+
+                <div>
+                    <dt>Rejection Reason</dt>
+                    <dd>
+                        @if (application.examReview.status === 'rejected') {
+                            {{ application.examReview.rejectionReason ?? '-' }}
+                        } @else {
+                            -
+                        }
+                    </dd>
+                </div>
+            </dl>
+        </section>
+
+        @if (
+            isReviewMode
+            && reviewType === 'initial_application'
+            && application.applicationReview.status === 'pending'
+        ) {
+            <section class="review-card">
+    <h2>Application Review Decision</h2>
+
+    <div class="decision-buttons">
+        <button
+            type="button"
+            class="decision-button"
+            [class.selected]="selectedDecision === 'approved'"
+            (click)="selectDecision('approved')"
+        >
+            Approve
+        </button>
+
+        <button
+            type="button"
+            class="decision-button"
+            [class.selected]="selectedDecision === 'rejected'"
+            (click)="selectDecision('rejected')"
+        >
+            Reject
+        </button>
+    </div>
+
+    @if (selectedDecision === 'rejected') {
+        <div class="rejection-field">
+            <label for="rejectionReason">Rejection Reason</label>
+
+            <textarea
+                id="rejectionReason"
+                rows="4"
+                [formControl]="rejectionReason"
+                placeholder="Enter the reason for rejection."
+            ></textarea>
+
+            @if (
+                rejectionReason.touched
+                && rejectionReason.hasError('required')
+            ) {
+                <p class="field-error">
+                    Rejection reason is required.
+                </p>
+            }
+        </div>
+    }
+
+    <div class="review-actions">
+        <button
+            type="button"
+            class="button button-secondary"
+            (click)="cancelReview()"
+        >
+            Cancel
+        </button>
+
+        <button
+            type="button"
+            class="button button-primary"
+            [disabled]="!selectedDecision || isSubmitting"
+            (click)="submitReview()"
+        >
+            {{ isSubmitting ? 'Submitting...' : 'Submit Decision' }}
+        </button>
+    </div>
+</section>
+        }
+
+        @if (
+            isReviewMode
+            && reviewType === 'exam_results'
+            && application.examReview.status === 'pending'
+        ) {
+            <section class="detail-card">
+                <h2>Exam Results Review Decision</h2>
+
+                <div class="decision-buttons">
+                    <button
+                        type="button"
+                        class="button button-approve"
+                        [class.selected]="selectedDecision === 'approved'"
+                        (click)="selectDecision('approved')"
+                    >
+                        Approve
+                    </button>
+
+                    <button
+                        type="button"
+                        class="button button-reject"
+                        [class.selected]="selectedDecision === 'rejected'"
+                        (click)="selectDecision('rejected')"
+                    >
+                        Reject
+                    </button>
+                </div>
+
+                @if (selectedDecision === 'rejected') {
+                    <div class="form-field">
+                        <label for="rejectionReason">Rejection Reason</label>
+
+                        <textarea
+                            id="rejectionReason"
+                            rows="5"
+                            [formControl]="rejectionReason"
+                            placeholder="Enter the reason for rejection."
+                        ></textarea>
+
+                        @if (rejectionReason.touched && rejectionReason.hasError('required')) {
+                            <p class="field-error">Rejection reason is required.</p>
+                        }
+
+                        @if (rejectionReason.touched && rejectionReason.hasError('maxlength')) {
+                            <p class="field-error">
+                                Rejection reason must not exceed 500 characters.
+                            </p>
+                        }
+                    </div>
+                }
+
+                @if (reviewErrorMessage) {
+                    <p class="error-message">{{ reviewErrorMessage }}</p>
+                }
+
+                <div class="form-actions">
+                    <button
+                        type="button"
+                        class="button button-secondary"
+                        (click)="cancelReview()"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="button"
+                        class="button button-primary"
+                        [disabled]="isSubmittingReview || !selectedDecision"
+                        (click)="submitReview()"
+                    >
+                        {{ isSubmittingReview ? 'Submitting...' : 'Submit Decision' }}
+                    </button>
+                </div>
+            </section>
+        }
+
+        @if (
+            isReviewMode
+            && reviewType === 'initial_application'
+            && application.applicationReview.status !== 'pending'
+        ) {
+            <section class="detail-card">
+                <h2>Application Review Result</h2>
+
+                <p>
+                    This application review has already been
+                    <strong>{{ getReviewStatusLabel(application.applicationReview.status) }}</strong>.
+                </p>
+
+                @if (application.applicationReview.status === 'rejected') {
+                    <p>
+                        <strong>Rejection Reason:</strong>
+                        {{ application.applicationReview.rejectionReason ?? '-' }}
+                    </p>
+                }
+            </section>
+        }
+
+        @if (
+            isReviewMode
+            && reviewType === 'exam_results'
+            && application.examReview.status !== 'pending'
+        ) {
+            <section class="detail-card">
+                <h2>Exam Results Review Result</h2>
+
+                <p>
+                    This exam results review has already been
+                    <strong>{{ getReviewStatusLabel(application.examReview.status) }}</strong>.
+                </p>
+
+                @if (application.examReview.status === 'rejected') {
+                    <p>
+                        <strong>Rejection Reason:</strong>
+                        {{ application.examReview.rejectionReason ?? '-' }}
+                    </p>
+                }
+            </section>
+        }
+
+        <div class="form-actions">
+            @if (isReviewMode) {
+                <a
+                    routerLink="/modifications"
+                    class="button button-secondary"
+                >
+                    Back to Review Requests
+                </a>
+            } @else {
+                <a
+                    routerLink="/applications"
+                    class="button button-secondary"
+                >
+                    Back to Applications
+                </a>
+            }
+        </div>
+    }
+</main>

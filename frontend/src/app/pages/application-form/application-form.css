@@ -1,0 +1,138 @@
+.page {
+    width: 100%;
+    max-width: 1100px;
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 40px;
+    box-sizing: border-box;
+}
+
+.page-header {
+    margin-bottom: 24px;
+}
+
+.page-header h1 {
+    margin: 5px 0 0;
+    font-size: 32px;
+}
+
+.eyebrow {
+    margin: 0;
+    color: #ac0033;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.form-card {
+    margin-bottom: 24px;
+    padding: 24px;
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: none;
+}
+
+.form-card h2 {
+    margin: 0 0 20px;
+    font-size: 21px;
+}
+
+.form-grid,
+.mapping-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.form-field label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.form-field input,
+.form-field select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #b8b8b8;
+    border-radius: 5px;
+    box-sizing: border-box;
+    box-shadow: none;
+    font: inherit;
+}
+
+.section-header,
+.mapping-header,
+.form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.mapping-card {
+    margin-top: 18px;
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: #fafafa;
+    box-shadow: none;
+}
+
+.mapping-header h3 {
+    margin: 0 0 16px;
+    font-size: 17px;
+}
+
+.remove-button {
+    border: 0;
+    background: transparent;
+    color: #9b1c1c;
+    cursor: pointer;
+}
+
+.button {
+    padding: 9px 15px;
+    border: 1px solid #ac0033;
+    border-radius: 5px;
+    box-shadow: none;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.button-primary {
+    background: #ac0033;
+    color: #ffffff;
+}
+
+.button-secondary {
+    background: #ffffff;
+    color: #ac0033;
+}
+
+.form-actions {
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 28px;
+}
+
+.error-message {
+    padding: 12px;
+    border-radius: 6px;
+    background: #f8dddd;
+    color: #9b1c1c;
+}
+
+@media (max-width: 760px) {
+    .form-grid,
+    .mapping-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .page {
+        padding: 24px;
+    }
+}

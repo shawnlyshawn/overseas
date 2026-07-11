@@ -1,0 +1,300 @@
+<main class="page">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Overseas Mobility</p>
+            <h1>{{ isEditMode ? 'Modify Application' : 'Create New Application' }}</h1>
+        </div>
+    </div>
+
+    @if (isLoading) {
+        <p class="message">Loading application...</p>
+    } @else {
+        <form
+            [formGroup]="applicationForm"
+            (ngSubmit)="onSubmit()"
+        >
+            <section class="form-card">
+                <h2>General Information</h2>
+
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label for="academicYear">Academic Year</label>
+
+                        <select
+                            id="academicYear"
+                            formControlName="academicYear"
+                        >
+                            @for (academicYear of academicYearOptions; track academicYear) {
+                                <option [value]="academicYear">
+                                    {{ academicYear }}
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="expectedMobilityPeriod">Mobility Period</label>
+
+                        <select
+                            id="expectedMobilityPeriod"
+                            formControlName="expectedMobilityPeriod"
+                        >
+                            <option value="first_semester">First Semester</option>
+                            <option value="second_semester">Second Semester</option>
+                            <option value="full_year">Full Year</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="hostInstitution">Host Institution</label>
+
+                        <select
+                            id="hostInstitution"
+                            formControlName="hostInstitution"
+                        >
+                            <option
+                                value=""
+                                disabled
+                            >
+                                Select Host Institution
+                            </option>
+
+                            @for (institution of hostInstitutions; track institution._id) {
+                                <option [value]="institution._id">
+                                    {{ institution.name }}
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="referentLecturer">Referent Lecturer</label>
+
+                        <select
+                            id="referentLecturer"
+                            formControlName="referentLecturer"
+                        >
+                            <option
+                                value=""
+                                disabled
+                            >
+                                Select Referent Lecturer
+                            </option>
+
+                            @for (lecturer of lecturers; track lecturer._id) {
+                                <option [value]="lecturer._id">
+                                    {{ getFullName(lecturer.firstName, lecturer.lastName) }}
+                                </option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="form-card">
+                <div class="section-header">
+                    <h2>Exam Mappings</h2>
+
+                    <button
+                        type="button"
+                        class="button button-secondary"
+                        (click)="addExamMapping()"
+                    >
+                        Add Exam
+                    </button>
+                </div>
+
+                <div formArrayName="examMappings">
+                    @for (mapping of examMappings.controls; track $index; let index = $index) {
+                        <div
+                            class="mapping-card"
+                            [formGroupName]="index"
+                        >
+                            <div class="mapping-header">
+                                <h3>Exam Mapping {{ index + 1 }}</h3>
+
+                                @if (index > 0) {
+                                    <button
+                                        type="button"
+                                        class="button button-danger"
+                                        (click)="removeExamMapping(index)"
+                                    >
+                                        Remove
+                                    </button>
+                                }
+                            </div>
+
+                            <div class="mapping-grid">
+                                <div class="form-field">
+                                    <label [for]="'foreignCourseCode-' + index">
+                                        Foreign Course Code
+                                    </label>
+
+                                    <input
+                                        [id]="'foreignCourseCode-' + index"
+                                        type="text"
+                                        formControlName="foreignCourseCode"
+                                    >
+                                </div>
+
+                                <div class="form-field">
+                                    <label [for]="'foreignCourseName-' + index">
+                                        Foreign Course Name
+                                    </label>
+
+                                    <input
+                                        [id]="'foreignCourseName-' + index"
+                                        type="text"
+                                        formControlName="foreignCourseName"
+                                    >
+                                </div>
+
+                                <div class="form-field">
+                                    <label [for]="'foreignCourseCredits-' + index">
+                                        Foreign Course Credits
+                                    </label>
+
+                                    <input
+                                        [id]="'foreignCourseCredits-' + index"
+                                        type="number"
+                                        min="1"
+                                        formControlName="foreignCourseCredits"
+                                    >
+                                </div>
+
+                                <div class="form-field">
+                                    <label [for]="'caFoscariCourseCode-' + index">
+                                        Ca' Foscari Course Code
+                                    </label>
+
+                                    <input
+                                        [id]="'caFoscariCourseCode-' + index"
+                                        type="text"
+                                        formControlName="caFoscariCourseCode"
+                                    >
+                                </div>
+
+                                <div class="form-field">
+                                    <label [for]="'caFoscariCourseName-' + index">
+                                        Ca' Foscari Course Name
+                                    </label>
+
+                                    <input
+                                        [id]="'caFoscariCourseName-' + index"
+                                        type="text"
+                                        formControlName="caFoscariCourseName"
+                                    >
+                                </div>
+
+                                <div class="form-field">
+                                    <label [for]="'caFoscariCourseCredits-' + index">
+                                        Ca' Foscari Course Credits
+                                    </label>
+
+                                    <input
+                                        [id]="'caFoscariCourseCredits-' + index"
+                                        type="number"
+                                        min="1"
+                                        formControlName="caFoscariCourseCredits"
+                                    >
+                                </div>
+                            </div>
+
+                            @if (isAfterMobility) {
+                                <div
+                                    class="result-fields"
+                                    formGroupName="result"
+                                >
+                                    <h4>Exam Result</h4>
+
+                                    <div class="mapping-grid">
+                                        <div class="form-field">
+                                            <label [for]="'examDate-' + index">
+                                                Exam Date
+                                            </label>
+
+                                            <input
+                                                [id]="'examDate-' + index"
+                                                type="date"
+                                                formControlName="examDate"
+                                            >
+                                        </div>
+
+                                        <div class="form-field">
+                                            <label [for]="'score-' + index">
+                                                Score
+                                            </label>
+
+                                            <input
+                                                [id]="'score-' + index"
+                                                type="number"
+                                                min="0"
+                                                formControlName="score"
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </section>
+
+            <section class="form-card">
+                <h2>Learning Agreement</h2>
+
+                <div class="form-field">
+                    <label for="learningAgreement">
+                        Learning Agreement
+                    </label>
+
+                    <input
+                        id="learningAgreement"
+                        type="file"
+                        accept=".pdf,application/pdf"
+                        (change)="onLearningAgreementSelected($event)"
+                    >
+
+                    @if (
+                        learningAgreementControl.touched
+                        && learningAgreementControl.hasError('required')
+                    ) {
+                        <p class="field-error">
+                            Learning Agreement is required.
+                        </p>
+                    }
+
+                    @if (isEditMode) {
+                        <p class="field-help">
+                            Upload a new file only when replacing the existing Learning Agreement.
+                        </p>
+                    }
+                </div>
+            </section>
+
+            @if (errorMessage) {
+                <p class="error-message">
+                    {{ errorMessage }}
+                </p>
+            }
+
+            <div class="form-actions">
+                <button
+                    type="button"
+                    class="button button-secondary"
+                    (click)="cancel()"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    class="button button-primary"
+                    [disabled]="isSubmitting"
+                >
+                    {{ isSubmitting ? 'Saving...' : 'Save Application' }}
+                </button>
+            </div>
+        </form>
+    }
+</main>
