@@ -1,9 +1,18 @@
+import mongoose from 'mongoose';
 import type { Request, Response } from 'express';
 
-import { findApplications, findApplicationById, createApplication, updateApplicationById } from '../services/application.service';
+import { findApplications, findApplicationById, createApplication } from '../services/application.service';
+import Application from '../models/application.model';
 
-type ReviewStatus = 'not_submitted' | 'pending' | 'approved' | 'rejected';
-type Phase = 'created' | 'awaiting_application_approval' | 'pre_departure_complete' | 'in_mobility' | 'awaiting_score_approval' | 'closed' | 'canceled';
+type ApplicationStatus =
+    | 'bm_awaiting_lecturer_review'
+    | 'bm_awaiting_staff_verification'
+    | 'bm_completed'
+    | 'dm_in_progress'
+    | 'am_awaiting_transcript_upload'
+    | 'am_awaiting_lecturer_review'
+    | 'am_awaiting_staff_verification'
+    | 'closed';
 
 export const getApplications = async (req: Request, res: Response) => {
     try {
@@ -16,16 +25,27 @@ export const getApplications = async (req: Request, res: Response) => {
             });
         }
 
-        const reviewStatus = typeof req.query.reviewStatus === 'string' ? req.query.reviewStatus : undefined;
+        const status = typeof req.query.status === 'string' ? req.query.status : undefined;
 
-        const phases = typeof req.query.phases === 'string' ? req.query.phases.split(',') : undefined;
+        const validStatuses: ApplicationStatus[] = [
+            'bm_awaiting_lecturer_review',
+            'bm_awaiting_staff_verification',
+            'bm_completed',
+            'dm_in_progress',
+            'am_awaiting_transcript_upload',
+            'am_awaiting_lecturer_review',
+            'am_awaiting_staff_verification',
+            'closed',
+        ];
 
-        const applications = await findApplications(
-            user.userId,
-            user.role,
-            reviewStatus as ReviewStatus | undefined,
-            phases as Phase[] | undefined
-        );
+        if (status && !validStatuses.includes(status as ApplicationStatus)) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Invalid application status.',
+            });
+        }
+
+        const applications = await findApplications(user.userId, user.role, status as ApplicationStatus | undefined);
 
         return res.status(200).json({
             result: 'success',
@@ -44,6 +64,7 @@ export const getApplications = async (req: Request, res: Response) => {
 export const getApplicationDetail = async (req: Request<{ applicationId: string }>, res: Response) => {
     try {
         const user = req.user;
+        const applicationId = req.params.applicationId;
 
         if (!user) {
             return res.status(401).json({
@@ -52,16 +73,16 @@ export const getApplicationDetail = async (req: Request<{ applicationId: string 
             });
         }
 
-        const applicationId = req.params.applicationId;
-
-        if (!applicationId) {
+        // ObjectId 형식 자체가 다름
+        // MongoDB ObjectId는 보통 24자리 16진수 문자열
+        if (!mongoose.isValidObjectId(applicationId)) {
             return res.status(400).json({
                 result: 'failed',
-                message: 'Application ID is required.',
+                message: 'Invalid application ID.',
             });
         }
 
-        const application = await findApplicationById(applicationId);
+        const application = await findApplicationById(applicationId, user.userId, user.role);
 
         if (!application) {
             return res.status(404).json({
@@ -82,7 +103,6 @@ export const getApplicationDetail = async (req: Request<{ applicationId: string 
             message: 'Internal server error.',
         });
     }
-    
 };
 
 export const createNewApplication = async (req: Request, res: Response) => {
@@ -101,7 +121,42 @@ export const createNewApplication = async (req: Request, res: Response) => {
         const expectedMobilityPeriod = req.body.expectedMobilityPeriod;
         const referentLecturer = req.body.referentLecturer;
 
-        const examMappings = JSON.parse(req.body.examMappings);
+        if (
+            typeof academicYear !== 'string' ||
+            typeof hostInstitution !== 'string' ||
+            typeof expectedMobilityPeriod !== 'string' ||
+            typeof referentLecturer !== 'string'
+        ) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Invalid application data.',
+            });
+        }
+
+        if (typeof req.body.examMappings !== 'string') {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Exam mappings are required.',
+            });
+        }
+
+        let examMappings: unknown;
+
+        try {
+            examMappings = JSON.parse(req.body.examMappings);
+        } catch {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Exam mappings must be valid JSON.',
+            });
+        }
+
+        if (!Array.isArray(examMappings) || examMappings.length === 0) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'At least one exam mapping is required.',
+            });
+        }
 
         if (!req.file) {
             return res.status(400).json({
@@ -110,23 +165,18 @@ export const createNewApplication = async (req: Request, res: Response) => {
             });
         }
 
-        const application = await createApplication(
-            user.userId,
-            {
-                academicYear,
-                hostInstitution,
-                expectedMobilityPeriod,
-                referentLecturer,
-                examMappings,
-                learningAgreement: {
-                    file: {
-                        filename: req.file.filename,
-                        path: req.file.path,
-                        uploadedAt: new Date(),
-                    },
-                },
-            }
-        );
+        const application = await createApplication(user.userId, {
+            academicYear,
+            hostInstitution,
+            expectedMobilityPeriod,
+            referentLecturer,
+            examMappings,
+            learningAgreement: {
+                filename: req.file.filename,
+                path: req.file.path,
+                uploadedAt: new Date(),
+            },
+        });
 
         return res.status(201).json({
             result: 'success',
@@ -142,7 +192,289 @@ export const createNewApplication = async (req: Request, res: Response) => {
     }
 };
 
-export const updateApplication = async (req: Request<{ applicationId: string }>, res: Response) => {
+export const reviewApplication = async (req: Request<{ applicationId: string }>, res: Response) => {
+    try {
+        const user = req.user;
+        const applicationId = req.params.applicationId;
+        const decision = req.body.decision;
+        const rejectionReason = req.body.rejectionReason;
+
+        if (!user) {
+            return res.status(401).json({
+                result: 'failed',
+                message: 'Authentication is required.',
+            });
+        }
+
+        if (!mongoose.isValidObjectId(applicationId)) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Invalid application ID.',
+            });
+        }
+
+        if (decision !== 'approved' && decision !== 'rejected') {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Decision must be approved or rejected.',
+            });
+        }
+
+        if (
+            decision === 'rejected' &&
+            (
+                typeof rejectionReason !== 'string' ||
+                !rejectionReason.trim()
+            )
+        ) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Rejection reason is required.',
+            });
+        }
+
+        const application = await Application.findOne({
+            _id: applicationId,
+            referentLecturer: user.userId,
+        });
+
+        if (!application) {
+            return res.status(404).json({
+                result: 'failed',
+                message: 'Application not found.',
+            });
+        }
+
+        if (application.status !== 'bm_awaiting_lecturer_review') {
+            return res.status(409).json({
+                result: 'failed',
+                message: 'This application is not awaiting lecturer review.',
+            });
+        }
+
+        application.applicationReview.status = decision;
+        application.applicationReview.reviewedBy = new mongoose.Types.ObjectId(user.userId);
+        application.applicationReview.reviewedAt = new Date();
+        application.applicationReview.rejectionReason =
+            decision === 'rejected'
+                ? rejectionReason.trim()
+                : null;
+
+        if (decision === 'approved') {
+            application.status = 'bm_awaiting_staff_verification';
+        }
+
+        await application.save();
+
+        return res.status(200).json({
+            result: 'success',
+            data: application,
+        });
+    } catch (error: unknown) {
+        console.error('Failed to review application:', error);
+
+        return res.status(500).json({
+            result: 'failed',
+            message: 'Internal server error.',
+        });
+    }
+};
+
+export const verifyPreDeparture = async (req: Request<{ applicationId: string }>, res: Response) => {
+    try {
+        const user = req.user;
+        const applicationId = req.params.applicationId;
+        const verified = req.body.verified;
+
+        if (!user) {
+            return res.status(401).json({
+                result: 'failed',
+                message: 'Authentication is required.',
+            });
+        }
+
+        if (!mongoose.isValidObjectId(applicationId)) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Invalid application ID.',
+            });
+        }
+
+        if (verified !== true) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Verification confirmation is required.',
+            });
+        }
+
+        const application = await Application.findById(applicationId);
+
+        if (!application) {
+            return res.status(404).json({
+                result: 'failed',
+                message: 'Application not found.',
+            });
+        }
+
+        if (application.status !== 'bm_awaiting_staff_verification') {
+            return res.status(409).json({
+                result: 'failed',
+                message: 'This application is not awaiting staff verification.',
+            });
+        }
+
+        if (application.applicationReview.status !== 'approved') {
+            return res.status(409).json({
+                result: 'failed',
+                message: 'The application has not been approved by the lecturer.',
+            });
+        }
+
+        if (
+            !application.academicYear ||
+            !application.expectedMobilityPeriod ||
+            !application.student ||
+            !application.hostInstitution ||
+            !application.referentLecturer ||
+            application.examMappings.length === 0 ||
+            !application.learningAgreement
+        ) {
+            return res.status(409).json({
+                result: 'failed',
+                message: 'The application is missing required pre-departure data.',
+            });
+        }
+
+        application.status = 'bm_completed';
+
+        await application.save();
+
+        return res.status(200).json({
+            result: 'success',
+            data: application,
+        });
+    } catch (error: unknown) {
+        console.error('Failed to verify pre-departure application:', error);
+
+        return res.status(500).json({
+            result: 'failed',
+            message: 'Internal server error.',
+        });
+    }
+};
+
+export const updateMobilityDates = async (req: Request<{ applicationId: string }>, res: Response) => {
+    try {
+        const user = req.user;
+        const applicationId = req.params.applicationId;
+        const hostUniversityArrivalDate = req.body.hostUniversityArrivalDate;
+        const hostUniversityDepartureDate = req.body.hostUniversityDepartureDate;
+
+        if (!user) {
+            return res.status(401).json({
+                result: 'failed',
+                message: 'Authentication is required.',
+            });
+        }
+
+        if (!mongoose.isValidObjectId(applicationId)) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Invalid application ID.',
+            });
+        }
+
+        if (!hostUniversityArrivalDate && !hostUniversityDepartureDate) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'At least one mobility date is required.',
+            });
+        }
+
+        const arrivalDate = hostUniversityArrivalDate ? new Date(hostUniversityArrivalDate) : undefined;
+        const departureDate = hostUniversityDepartureDate ? new Date(hostUniversityDepartureDate) : undefined;
+
+        if (arrivalDate && Number.isNaN(arrivalDate.getTime())) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Invalid arrival date.',
+            });
+        }
+
+        if (departureDate && Number.isNaN(departureDate.getTime())) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Invalid departure date.',
+            });
+        }
+
+        const application = await Application.findOne({
+            _id: applicationId,
+            student: user.userId,
+        });
+
+        if (!application) {
+            return res.status(404).json({
+                result: 'failed',
+                message: 'Application not found.',
+            });
+        }
+
+        if (application.status !== 'bm_completed' && application.status !== 'dm_in_progress') {
+            return res.status(409).json({
+                result: 'failed',
+                message: 'Mobility dates cannot be updated in the current application status.',
+            });
+        }
+
+        const finalArrivalDate = arrivalDate ?? application.hostUniversityArrivalDate ?? undefined;
+        const finalDepartureDate = departureDate ?? application.hostUniversityDepartureDate ?? undefined;
+
+        if (finalDepartureDate && !finalArrivalDate) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Arrival date is required before the departure date.',
+            });
+        }
+
+        if (finalArrivalDate && finalDepartureDate && finalDepartureDate < finalArrivalDate) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Departure date cannot be earlier than arrival date.',
+            });
+        }
+
+        if (arrivalDate) {
+            application.hostUniversityArrivalDate = arrivalDate;
+        }
+
+        if (departureDate) {
+            application.hostUniversityDepartureDate = departureDate;
+        }
+
+        if (finalDepartureDate) {
+            application.status = 'am_awaiting_transcript_upload';
+        } else if (finalArrivalDate) {
+            application.status = 'dm_in_progress';
+        }
+
+        await application.save();
+
+        return res.status(200).json({
+            result: 'success',
+            data: application,
+        });
+    } catch (error: unknown) {
+        console.error('Failed to update mobility dates:', error);
+
+        return res.status(500).json({
+            result: 'failed',
+            message: 'Internal server error.',
+        });
+    }
+};
+
+export const submitExamResults = async (req: Request<{ applicationId: string }>, res: Response) => {
     try {
         const user = req.user;
         const applicationId = req.params.applicationId;
@@ -154,180 +486,85 @@ export const updateApplication = async (req: Request<{ applicationId: string }>,
             });
         }
 
-        const updateData: Record<string, unknown> = {
-            ...req.body,
-        };
-
-        if (typeof req.body.examMappings === 'string') {
-            updateData.examMappings = JSON.parse(
-                req.body.examMappings
-            );
-        }
-
-        if (req.body.arrivalDate || req.body.departureDate) {
-            updateData.mobilityDates = {
-                arrivalDate: req.body.arrivalDate,
-                departureDate: req.body.departureDate,
-            };
-        }
-
-        const files = req.files as {
-            [fieldname: string]: Express.Multer.File[];
-        } | undefined;
-
-        const learningAgreementFile =
-            files?.learningAgreement?.[0];
-
-        const transcriptFile =
-            files?.transcriptOfRecords?.[0];
-
-        if (learningAgreementFile) {
-            updateData.learningAgreement = {
-                file: {
-                    filename: learningAgreementFile.filename,
-                    path: learningAgreementFile.path,
-                    uploadedAt: new Date(),
-                },
-            };
-        }
-
-        if (transcriptFile) {
-            updateData.transcriptOfRecords = {
-                file: {
-                    filename: transcriptFile.filename,
-                    path: transcriptFile.path,
-                    uploadedAt: new Date(),
-                },
-            };
-        }
-        
-        // 학생의 examMappings / LA / ToR 수정 차단
-        const requiresReview =
-            typeof req.body.examMappings === 'string' ||
-            !!learningAgreementFile ||
-            !!transcriptFile;
-
-        if (user.role === 'student' && requiresReview) {
+        if (!mongoose.isValidObjectId(applicationId)) {
             return res.status(400).json({
                 result: 'failed',
-                message:
-                    'This modification must be submitted as a modification request.',
+                message: 'Invalid application ID.',
             });
         }
-        
-        // reviewStatus Update authority check + reject reason 존재여부 check
-        if (req.body.reviewStatus) {
-            if (user.role !== 'lecturer') {
-                return res.status(403).json({
-                    result: 'fa`iled',
-                    message: 'Only lecturers can review applications.',
-                });
-            }
 
-            if (req.body.reviewStatus !== 'approved' && req.body.reviewStatus !== 'rejected') {
-                return res.status(400).json({
-                    result: 'failed',
-                    message: 'Invalid review status.',
-                });
-            }
+        if (typeof req.body.examMappings !== 'string') {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Exam mappings are required.',
+            });
+        }
 
-            if (req.body.reviewStatus === 'rejected' && !req.body.rejectionReason
+        let examMappings: unknown;
+
+        try {
+            examMappings = JSON.parse(req.body.examMappings);
+        } catch {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Exam mappings must be valid JSON.',
+            });
+        }
+
+        if (!Array.isArray(examMappings) || examMappings.length === 0) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'At least one exam mapping is required.',
+            });
+        }
+
+        const hasIncompleteResult = examMappings.some((mapping) => {
+            if (
+                typeof mapping !== 'object' ||
+                mapping === null ||
+                !('result' in mapping)
             ) {
-                return res.status(400).json({
-                    result: 'failed',
-                    message: 'Rejection reason is required.',
-                });
+                return true;
             }
 
-            updateData.reviewStatus = req.body.reviewStatus;
-            updateData.reviewDate = new Date();
-            updateData.rejectionReason =
-                req.body.reviewStatus === 'rejected'
-                    ? req.body.rejectionReason
-                    : null;
+            const result = mapping.result;
+
+            if (
+                typeof result !== 'object' ||
+                result === null
+            ) {
+                return true;
+            }
+
+            const score =
+                'score' in result
+                    ? result.score
+                    : undefined;
+
+            const examDate =
+                'examDate' in result
+                    ? result.examDate
+                    : undefined;
+
+            return (
+                typeof score !== 'string' ||
+                !score.trim() ||
+                typeof examDate !== 'string' ||
+                Number.isNaN(new Date(examDate).getTime())
+            );
+        });
+
+        if (hasIncompleteResult) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Every exam mapping must include a valid score and exam date.',
+            });
         }
 
-        // application phase update authority check
-        if (req.body.phase) {
-            if (user.role !== 'office_staff') {
-                return res.status(403).json({
-                    result: 'failed',
-                    message: 'Only office staff can update the application phase.',
-                });
-            }
-
-            const existingApplication =
-                await findApplicationById(applicationId);
-
-            if (!existingApplication) {
-                return res.status(404).json({
-                    result: 'failed',
-                    message: 'Application not found.',
-                });
-            }
-
-            if (req.body.phase === 'pre_departure_complete') {
-                const validCurrentPhase =
-                    existingApplication.phase === 'created' ||
-                    existingApplication.phase ===
-                        'awaiting_application_approval';
-
-                if (
-                    existingApplication.reviewStatus !== 'approved' ||
-                    !validCurrentPhase ||
-                    !existingApplication.academicYear ||
-                    !existingApplication.expectedMobilityPeriod ||
-                    !existingApplication.student ||
-                    !existingApplication.hostInstitution ||
-                    !existingApplication.referentLecturer ||
-                    existingApplication.examMappings.length === 0 ||
-                    !existingApplication.learningAgreement?.file ||
-                    !existingApplication.reviewDate
-                ) {
-                    return res.status(400).json({
-                        result: 'failed',
-                        message:
-                            'Application is not ready for pre-departure completion.',
-                    });
-                }
-
-                updateData.phase = 'pre_departure_complete';
-                updateData.preDepartureCompletedAt = new Date();
-            } else if (req.body.phase === 'closed') {
-                if (
-                    existingApplication.reviewStatus !== 'approved' ||
-                    existingApplication.phase !==
-                        'awaiting_score_approval' ||
-                    !existingApplication.academicYear ||
-                    !existingApplication.expectedMobilityPeriod ||
-                    !existingApplication.student ||
-                    !existingApplication.hostInstitution ||
-                    !existingApplication.referentLecturer ||
-                    existingApplication.examMappings.length === 0 ||
-                    !existingApplication.learningAgreement?.file ||
-                    !existingApplication.transcriptOfRecords?.file ||
-                    !existingApplication.mobilityDates?.arrivalDate ||
-                    !existingApplication.mobilityDates?.departureDate ||
-                    !existingApplication.preDepartureCompletedAt
-                ) {
-                    return res.status(400).json({
-                        result: 'failed',
-                        message:
-                            'Application is not ready to be closed.',
-                    });
-                }
-
-                updateData.phase = 'closed';
-                updateData.closedAt = new Date();
-            } else {
-                return res.status(400).json({
-                    result: 'failed',
-                    message: 'Invalid phase update.',
-                });
-            }
-        }
-
-        const application = await updateApplicationById(applicationId, updateData, user.userId);
+        const application = await Application.findOne({
+            _id: applicationId,
+            student: user.userId,
+        });
 
         if (!application) {
             return res.status(404).json({
@@ -336,12 +573,256 @@ export const updateApplication = async (req: Request<{ applicationId: string }>,
             });
         }
 
+        const canSubmit =
+            application.status === 'am_awaiting_transcript_upload' ||
+            (
+                application.status === 'am_awaiting_lecturer_review' &&
+                application.examReview.status === 'rejected'
+            );
+
+        if (!canSubmit) {
+            return res.status(409).json({
+                result: 'failed',
+                message: 'Exam results cannot be submitted in the current application status.',
+            });
+        }
+
+        if (!req.file && !application.transcriptOfRecords) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Transcript of Records file is required.',
+            });
+        }
+
+        application.set('examMappings', examMappings);
+
+        if (req.file) {
+            application.transcriptOfRecords = {
+                filename: req.file.filename,
+                path: req.file.path,
+                uploadedAt: new Date(),
+            };
+        }
+
+        application.examReview.status = 'pending';
+        application.examReview.reviewedBy = null;
+        application.examReview.reviewedAt = null;
+        application.examReview.rejectionReason = null;
+        application.status = 'am_awaiting_lecturer_review';
+
+        await application.save();
+
         return res.status(200).json({
             result: 'success',
             data: application,
         });
     } catch (error: unknown) {
-        console.error('Failed to update application:', error);
+        console.error('Failed to submit exam results:', error);
+
+        return res.status(500).json({
+            result: 'failed',
+            message: 'Internal server error.',
+        });
+    }
+};
+
+export const reviewExamResults = async (req: Request<{ applicationId: string }>, res: Response) => {
+    try {
+        const user = req.user;
+        const applicationId = req.params.applicationId;
+        const decision = req.body.decision;
+        const rejectionReason = req.body.rejectionReason;
+
+        if (!user) {
+            return res.status(401).json({
+                result: 'failed',
+                message: 'Authentication is required.',
+            });
+        }
+
+        if (!mongoose.isValidObjectId(applicationId)) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Invalid application ID.',
+            });
+        }
+
+        if (decision !== 'approved' && decision !== 'rejected') {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Decision must be approved or rejected.',
+            });
+        }
+
+        if (
+            decision === 'rejected' &&
+            (
+                typeof rejectionReason !== 'string' ||
+                !rejectionReason.trim()
+            )
+        ) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Rejection reason is required.',
+            });
+        }
+
+        const application = await Application.findOne({
+            _id: applicationId,
+            referentLecturer: user.userId,
+        });
+
+        if (!application) {
+            return res.status(404).json({
+                result: 'failed',
+                message: 'Application not found.',
+            });
+        }
+
+        if (application.status !== 'am_awaiting_lecturer_review') {
+            return res.status(409).json({
+                result: 'failed',
+                message: 'This application is not awaiting exam review.',
+            });
+        }
+
+        if (application.examReview.status !== 'pending') {
+            return res.status(409).json({
+                result: 'failed',
+                message: 'The exam results are not pending review.',
+            });
+        }
+
+        if (!application.transcriptOfRecords) {
+            return res.status(409).json({
+                result: 'failed',
+                message: 'Transcript of Records has not been uploaded.',
+            });
+        }
+
+        const hasIncompleteResult = application.examMappings.some((mapping) => {
+            return (
+                !mapping.result?.score ||
+                !mapping.result?.examDate
+            );
+        });
+
+        if (hasIncompleteResult) {
+            return res.status(409).json({
+                result: 'failed',
+                message: 'Every exam mapping must include a score and exam date.',
+            });
+        }
+
+        application.examReview.status = decision;
+        application.examReview.reviewedBy = new mongoose.Types.ObjectId(user.userId);
+        application.examReview.reviewedAt = new Date();
+        application.examReview.rejectionReason =
+            decision === 'rejected'
+                ? rejectionReason.trim()
+                : null;
+
+        if (decision === 'approved') {
+            application.status = 'am_awaiting_staff_verification';
+        }
+
+        await application.save();
+
+        return res.status(200).json({
+            result: 'success',
+            data: application,
+        });
+    } catch (error: unknown) {
+        console.error('Failed to review exam results:', error);
+
+        return res.status(500).json({
+            result: 'failed',
+            message: 'Internal server error.',
+        });
+    }
+};
+
+export const closeApplication = async (req: Request<{ applicationId: string }>, res: Response) => {
+    try {
+        const user = req.user;
+        const applicationId = req.params.applicationId;
+        const closed = req.body.closed;
+
+        if (!user) {
+            return res.status(401).json({
+                result: 'failed',
+                message: 'Authentication is required.',
+            });
+        }
+
+        if (!mongoose.isValidObjectId(applicationId)) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Invalid application ID.',
+            });
+        }
+
+        if (closed !== true) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Closure confirmation is required.',
+            });
+        }
+
+        const application = await Application.findById(applicationId);
+
+        if (!application) {
+            return res.status(404).json({
+                result: 'failed',
+                message: 'Application not found.',
+            });
+        }
+
+        if (application.status !== 'am_awaiting_staff_verification') {
+            return res.status(409).json({
+                result: 'failed',
+                message: 'This application is not awaiting final staff verification.',
+            });
+        }
+
+        if (application.examReview.status !== 'approved') {
+            return res.status(409).json({
+                result: 'failed',
+                message: 'The exam results have not been approved by the lecturer.',
+            });
+        }
+
+        if (!application.transcriptOfRecords) {
+            return res.status(409).json({
+                result: 'failed',
+                message: 'Transcript of Records has not been uploaded.',
+            });
+        }
+
+        const hasIncompleteResult = application.examMappings.some((mapping) => {
+            return (
+                !mapping.result?.score ||
+                !mapping.result?.examDate
+            );
+        });
+
+        if (hasIncompleteResult) {
+            return res.status(409).json({
+                result: 'failed',
+                message: 'Every exam mapping must include a score and exam date.',
+            });
+        }
+
+        application.status = 'closed';
+
+        await application.save();
+
+        return res.status(200).json({
+            result: 'success',
+            data: application,
+        });
+    } catch (error: unknown) {
+        console.error('Failed to close application:', error);
 
         return res.status(500).json({
             result: 'failed',

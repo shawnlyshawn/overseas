@@ -1,13 +1,14 @@
-import express from "express";
+import express from 'express';
 
-import { authenticate } from '../middlewares/auth.middleware';
 import { getHostInstitutions } from '../controllers/host-institution.controller';
+import { authenticate, authorize } from '../middlewares/auth.middleware';
 
 const hostInstitutionRoutes = express.Router();
 
 hostInstitutionRoutes.get(
     '/',
     authenticate,
+    authorize('student'),
     getHostInstitutions
 );
 

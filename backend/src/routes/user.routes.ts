@@ -1,14 +1,15 @@
-import express from "express";
+import express from 'express';
 
-import { authenticate } from '../middlewares/auth.middleware';
-import { getCurrentUser } from '../controllers/user.controller';
+import { getLecturers } from '../controllers/user.controller';
+import { authenticate, authorize } from '../middlewares/auth.middleware';
 
 const userRoutes = express.Router();
 
 userRoutes.get(
-    '/me',
+    '/lecturers',
     authenticate,
-    getCurrentUser
+    authorize('student'),
+    getLecturers
 );
 
 export default userRoutes;

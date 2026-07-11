@@ -2,74 +2,30 @@ import mongoose from 'mongoose';
 
 import examMappingSchema from './schemas/exam-mapping.schema';
 import fileSchema from './schemas/file.schema';
-import mobilityDatesSchema from './schemas/mobility-dates.schema';
 
 const { Schema, SchemaTypes, model } = mongoose;
 
-const applicationSchema = new Schema(
+const applicationReviewSchema = new Schema(
     {
-        academicYear: { // frontend: dropdown bar
-            type: String,
-            required: true,
-            trim: true,
-            match: [/^\d{4}\/\d{4}$/, 'Academic year must be in YYYY/YYYY format.'],
-        },
-        expectedMobilityPeriod: {
+        // Application's status
+        status: { 
             type: String,
             enum: [
-                'first_semester',
-                'second_semester',
-                'full_year'
-            ],
-            required: true,
-        },
-        student: {
-            type: SchemaTypes.ObjectId,
-            ref: 'User',
-            required: true,
-        },
-        hostInstitution: {
-            type: SchemaTypes.ObjectId,
-            ref: 'HostInstitution',
-            required: true
-        },
-        referentLecturer: {
-            type: SchemaTypes.ObjectId,
-            ref: 'User',
-            required: true,
-        },
-        examMappings: {
-            type: [examMappingSchema],
-            required: true,
-            validate: { // make sure to have at least one exam mapping
-                validator: (value: unknown[]) =>
-                    Array.isArray(value) && value.length > 0,
-                message: 'At least one exam mapping is required.',
-            },
-        },
-        learningAgreement: {
-            file: {
-                type: fileSchema,
-            }
-        },
-        transcriptOfRecords: {
-            file: {
-                type: fileSchema,
-            }
-        },
-        mobilityDates: {
-            type: mobilityDatesSchema,
-        },
-        reviewStatus: {
-            type: String,
-            enum: [
-                'not_submitted',
                 'pending',
                 'approved',
-                'rejected'
+                'rejected',
             ],
             required: true,
-            default: 'not_submitted',
+            default: 'pending',
+        },
+        reviewedBy: {
+            type: SchemaTypes.ObjectId,
+            ref: 'User',
+            default: null,
+        },
+        reviewedAt: {
+            type: Date,
+            default: null,
         },
         rejectionReason: {
             type: String,
@@ -78,47 +34,155 @@ const applicationSchema = new Schema(
             trim: true,
             default: null,
         },
-        reviewDate: {
-            type: Date,
-            default: null
-        },
-        phase: {
+    },
+    {
+        _id: false,
+    }
+);
+
+const examReviewSchema = new Schema(
+    {
+        status: {
             type: String,
             enum: [
-                'created',
-                'awaiting_application_approval',
-                'pre_departure_complete',
-                'in_mobility',
-                'awaiting_score_approval',
-                'closed',
-                'canceled'
+                'not_submitted',
+                'pending',
+                'approved',
+                'rejected',
             ],
             required: true,
-            default: 'created',
+            default: 'not_submitted',
         },
-        preDepartureCompletedAt: {
+        reviewedBy: {
+            type: SchemaTypes.ObjectId,
+            ref: 'User',
+            default: null,
+        },
+        reviewedAt: {
             type: Date,
             default: null,
         },
-        canceledAt: {
-            type: Date,
+        rejectionReason: {
+            type: String,
+            minLength: 1,
+            maxLength: 200,
+            trim: true,
             default: null,
         },
-        closedAt: {
-            type: Date,
-            default: null,
-        },
-        lastModifiedBy: {
+    },
+    {
+        _id: false,
+    }
+);
+
+const applicationSchema = new Schema(
+    {
+        student: {
             type: SchemaTypes.ObjectId,
             ref: 'User',
             required: true,
-            // inject user through controller
+        },
+
+        referentLecturer: {
+            type: SchemaTypes.ObjectId,
+            ref: 'User',
+            required: true,
+        },
+
+        hostInstitution: {
+            type: SchemaTypes.ObjectId,
+            ref: 'HostInstitution',
+            required: true,
+        },
+
+        academicYear: {
+            type: String,
+            required: true,
+            trim: true,
+            match: [
+                /^\d{4}\/\d{4}$/,
+                'Academic year must be in YYYY/YYYY format.',
+            ],
+        },
+
+        expectedMobilityPeriod: {
+            type: String,
+            enum: [
+                'first_semester',
+                'second_semester',
+                'full_year',
+            ],
+            required: true,
+        },
+
+        status: {
+            type: String,
+            enum: [
+                'bm_awaiting_lecturer_review',
+                'bm_awaiting_staff_verification',
+                'bm_completed',
+                'dm_in_progress',
+                'am_awaiting_transcript_upload',
+                'am_awaiting_lecturer_review',
+                'am_awaiting_staff_verification',
+                'closed',
+            ],
+            required: true,
+            default: 'bm_awaiting_lecturer_review',
+        },
+
+        examMappings: {
+            type: [examMappingSchema],
+            required: true,
+            validate: {
+                validator: (value: unknown[]) =>
+                    Array.isArray(value) && value.length > 0,
+                message: 'At least one exam mapping is required.',
+            },
+        },
+
+        learningAgreement: {
+            type: fileSchema,
+            required: true,
+        },
+
+        // Before Mobility, New Application's Review Result
+        applicationReview: { 
+            type: applicationReviewSchema,
+            required: true,
+            default: () => ({
+                status: 'pending',
+            }),
+        },
+
+        hostUniversityArrivalDate: {
+            type: Date,
+            default: null,
+        },
+
+        hostUniversityDepartureDate: {
+            type: Date,
+            default: null,
+        },
+
+        transcriptOfRecords: {
+            type: fileSchema,
+            default: null,
+        },
+
+        // After Mobility, Exam's Review Result
+        examReview: {
+            type: examReviewSchema,
+            required: true,
+            default: () => ({
+                status: 'not_submitted',
+            }),
         },
     },
     {
         timestamps: true,
     }
-)
+);
 
 const Application = model(
     'Application',

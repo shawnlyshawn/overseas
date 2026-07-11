@@ -1,11 +1,23 @@
 import express from "express";
-import { login } from '../controllers/auth.controller';
 
-const authRoutes = express.Router();
-
+import { login, me } from '../controllers/auth.controller';
 // auth-middleware test
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 
+const authRoutes = express.Router();
+
+authRoutes.post(
+    '/login',
+    login
+);
+
+authRoutes.get(
+    '/me',
+    authenticate,
+    me
+);
+
+// auth-middleware test
 authRoutes.get(
     '/test',
     authenticate,
@@ -34,7 +46,5 @@ authRoutes.get(
     }
 );
 // auth-middleware test
-
-authRoutes.post('/login', login);
 
 export default authRoutes;

@@ -1,5 +1,22 @@
-// DB에 초기 데이터 생성하는 file
-import 'dotenv/config'; // for local execution
+/*
+CUK
+bm_awaiting_lecturer_review
+applicationReview.pending
+
+MIT
+dm_in_progress
+과거 approved modification 반영 완료
+rejected modification 1개
+pending modification 1개
+
+TUM
+am_awaiting_lecturer_review
+ToR 업로드 완료
+모든 시험 score + examDate 입력 완료
+examReview.pending
+*/
+
+import 'dotenv/config';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
@@ -8,7 +25,7 @@ import connectDB from '../config/database';
 import User from '../models/user.model';
 import HostInstitution from '../models/host-institution.model';
 import Application from '../models/application.model';
-import ApplicationModificationLog from '../models/application-modification-log.model';
+import ApplicationModification from '../models/application-modification.model';
 
 const ids = {
     users: {
@@ -16,15 +33,23 @@ const ids = {
         lecturer: new mongoose.Types.ObjectId(),
         staff: new mongoose.Types.ObjectId(),
     },
+
     hostInstitutions: {
         cuk: new mongoose.Types.ObjectId(),
         mit: new mongoose.Types.ObjectId(),
         tum: new mongoose.Types.ObjectId(),
     },
+
     applications: {
         cuk: new mongoose.Types.ObjectId(),
         mit: new mongoose.Types.ObjectId(),
         tum: new mongoose.Types.ObjectId(),
+    },
+
+    modifications: {
+        mitApproved: new mongoose.Types.ObjectId(),
+        mitRejected: new mongoose.Types.ObjectId(),
+        mitPending: new mongoose.Types.ObjectId(),
     },
 };
 
@@ -88,19 +113,27 @@ const hostInstitutions = [
 ];
 
 const applications = [
+    // Before Mobility
+    // Lecturer가 최초 Application과 LA를 검토해야 하는 상태
     {
         _id: ids.applications.cuk,
+
+        student: ids.users.student,
+        referentLecturer: ids.users.lecturer,
+        hostInstitution: ids.hostInstitutions.cuk,
+
         academicYear: '2026/2027',
         expectedMobilityPeriod: 'first_semester',
-        student: ids.users.student,
-        hostInstitution: ids.hostInstitutions.cuk,
-        referentLecturer: ids.users.lecturer,
+
+        status: 'bm_awaiting_lecturer_review',
 
         examMappings: [
             {
                 foreignCourseCode: 'CS101',
-                foreignCourseName: 'Introduction to Artificial Intelligence',
+                foreignCourseName:
+                    'Introduction to Artificial Intelligence',
                 foreignCourseCredits: 6,
+
                 caFoscariCourseCode: 'CT0123',
                 caFoscariCourseName: 'Artificial Intelligence',
                 caFoscariCourseCredits: 6,
@@ -109,45 +142,63 @@ const applications = [
                 foreignCourseCode: 'CS205',
                 foreignCourseName: 'Database Systems',
                 foreignCourseCredits: 6,
+
                 caFoscariCourseCode: 'CT0456',
-                caFoscariCourseName: 'Database Management Systems',
+                caFoscariCourseName:
+                    'Database Management Systems',
                 caFoscariCourseCredits: 6,
             },
         ],
 
         learningAgreement: {
-            file: {
-                fileName: 'la-catholic-university.pdf',
-                path: '/uploads/learning-agreements/la-catholic-university.pdf',
-                uploadedAt: new Date('2026-04-15'),
-            },
+            filename: 'la-catholic-university.pdf',
+            path:
+                '/uploads/learning-agreements/' +
+                'la-catholic-university.pdf',
+            uploadedAt: new Date('2026-04-15'),
         },
 
-        reviewStatus: 'pending',
-        rejectionReason: null,
-        reviewDate: null,
-        phase: 'awaiting_application_approval',
+        applicationReview: {
+            status: 'pending',
+            reviewedBy: null,
+            reviewedAt: null,
+            rejectionReason: null,
+        },
 
-        preDepartureCompletedAt: null,
-        canceledAt: null,
-        closedAt: null,
+        hostUniversityArrivalDate: null,
+        hostUniversityDepartureDate: null,
 
-        lastModifiedBy: ids.users.student,
+        transcriptOfRecords: null,
+
+        examReview: {
+            status: 'not_submitted',
+            reviewedBy: null,
+            reviewedAt: null,
+            rejectionReason: null,
+        },
     },
 
+    // During Mobility
+    // 과거 승인된 modification이 Application 원본에 반영된 상태
     {
         _id: ids.applications.mit,
+
+        student: ids.users.student,
+        referentLecturer: ids.users.lecturer,
+        hostInstitution: ids.hostInstitutions.mit,
+
         academicYear: '2026/2027',
         expectedMobilityPeriod: 'full_year',
-        student: ids.users.student,
-        hostInstitution: ids.hostInstitutions.mit,
-        referentLecturer: ids.users.lecturer,
+
+        status: 'dm_in_progress',
 
         examMappings: [
             {
                 foreignCourseCode: '6.3900',
-                foreignCourseName: 'Introduction to Machine Learning',
+                foreignCourseName:
+                    'Introduction to Machine Learning',
                 foreignCourseCredits: 6,
+
                 caFoscariCourseCode: 'CT0678',
                 caFoscariCourseName: 'Machine Learning',
                 caFoscariCourseCredits: 6,
@@ -156,219 +207,7 @@ const applications = [
                 foreignCourseCode: '6.1020',
                 foreignCourseName: 'Software Construction',
                 foreignCourseCredits: 6,
-                caFoscariCourseCode: 'CT0412',
-                caFoscariCourseName: 'Software Engineering',
-                caFoscariCourseCredits: 6,
-            },
-        ],
 
-        learningAgreement: {
-            file: {
-                fileName: 'la-mit.pdf',
-                path: '/uploads/learning-agreements/la-mit.pdf',
-                uploadedAt: new Date('2026-04-20'),
-            },
-        },
-
-        mobilityDates: {
-            arrivalDate: new Date('2026-08-25'),
-        },
-
-        reviewStatus: 'approved',
-        rejectionReason: null,
-        reviewDate: new Date('2026-05-02'),
-        phase: 'in_mobility',
-
-        preDepartureCompletedAt: new Date('2026-05-05'),
-        canceledAt: null,
-        closedAt: null,
-
-        lastModifiedBy: ids.users.staff,
-    },
-
-    {
-        _id: ids.applications.tum,
-        academicYear: '2025/2026',
-        expectedMobilityPeriod: 'second_semester',
-        student: ids.users.student,
-        hostInstitution: ids.hostInstitutions.tum,
-        referentLecturer: ids.users.lecturer,
-
-        examMappings: [
-            {
-                foreignCourseCode: 'IN2396',
-                foreignCourseName: 'Web Application Engineering',
-                foreignCourseCredits: 6,
-                caFoscariCourseCode: 'CT0677',
-                caFoscariCourseName: 'Web Applications and Technologies',
-                caFoscariCourseCredits: 6,
-                result: {
-                    score: '28',
-                    examDate: new Date('2026-06-20'),
-                },
-            },
-            {
-                foreignCourseCode: 'IN2107',
-                foreignCourseName: 'Natural Language Processing',
-                foreignCourseCredits: 6,
-                caFoscariCourseCode: 'CT0550',
-                caFoscariCourseName: 'Natural Language Processing',
-                caFoscariCourseCredits: 6,
-                result: {
-                    score: '30L',
-                    examDate: new Date('2026-06-25'),
-                },
-            },
-        ],
-
-        learningAgreement: {
-            file: {
-                fileName: 'la-tum.pdf',
-                path: '/uploads/learning-agreements/la-tum.pdf',
-                uploadedAt: new Date('2026-01-18'),
-            },
-        },
-
-        transcriptOfRecords: {
-            file: {
-                fileName: 'transcript-tum.pdf',
-                path: '/uploads/transcripts/transcript-tum.pdf',
-                uploadedAt: new Date('2026-07-01'),
-            },
-        },
-
-        mobilityDates: {
-            arrivalDate: new Date('2026-02-10'),
-            departureDate: new Date('2026-06-30'),
-        },
-
-        reviewStatus: 'pending',
-        rejectionReason: null,
-        reviewDate: null,
-        phase: 'awaiting_score_approval',
-
-        preDepartureCompletedAt: new Date('2026-01-25'),
-        canceledAt: null,
-        closedAt: null,
-
-        lastModifiedBy: ids.users.student,
-    },
-];
-
-const applicationModificationLogs = [
-    {
-        modifiedBy: ids.users.student,
-        application: ids.applications.cuk,
-        modificationReason: null,
-
-        academicYear: '2026/2027',
-        expectedMobilityPeriod: 'first_semester',
-        student: ids.users.student,
-        hostInstitution: ids.hostInstitutions.cuk,
-        referentLecturer: ids.users.lecturer,
-
-        examMappings: [
-            {
-                foreignCourseCode: 'CS101',
-                foreignCourseName: 'Introduction to Artificial Intelligence',
-                foreignCourseCredits: 6,
-                caFoscariCourseCode: 'CT0123',
-                caFoscariCourseName: 'Artificial Intelligence',
-                caFoscariCourseCredits: 6,
-            },
-        ],
-
-        learningAgreement: {
-            file: {
-                fileName: 'la-catholic-draft.pdf',
-                path: '/uploads/learning-agreements/la-catholic-draft.pdf',
-                uploadedAt: new Date('2026-04-10'),
-            },
-        },
-
-        reviewStatus: 'approved',
-        rejectionReason: null,
-        reviewDate: new Date('2026-04-12'),
-        phase: 'created',
-
-        preDepartureCompletedAt: null,
-        canceledAt: null,
-        closedAt: null,
-    },
-
-    {
-        modifiedBy: ids.users.student,
-        application: ids.applications.cuk,
-        modificationReason: null,
-
-        academicYear: '2026/2027',
-        expectedMobilityPeriod: 'first_semester',
-        student: ids.users.student,
-        hostInstitution: ids.hostInstitutions.cuk,
-        referentLecturer: ids.users.lecturer,
-
-        examMappings: [
-            {
-                foreignCourseCode: 'CS101',
-                foreignCourseName: 'Introduction to Artificial Intelligence',
-                foreignCourseCredits: 6,
-                caFoscariCourseCode: 'CT0123',
-                caFoscariCourseName: 'Artificial Intelligence',
-                caFoscariCourseCredits: 6,
-            },
-            {
-                foreignCourseCode: 'CS205',
-                foreignCourseName: 'Database Systems',
-                foreignCourseCredits: 6,
-                caFoscariCourseCode: 'CT0456',
-                caFoscariCourseName: 'Database Management Systems',
-                caFoscariCourseCredits: 6,
-            },
-        ],
-
-        learningAgreement: {
-            file: {
-                fileName: 'la-catholic-university.pdf',
-                path: '/uploads/learning-agreements/la-catholic-university.pdf',
-                uploadedAt: new Date('2026-04-15'),
-            },
-        },
-
-        reviewStatus: 'pending',
-        rejectionReason: null,
-        reviewDate: null,
-        phase: 'awaiting_application_approval',
-
-        preDepartureCompletedAt: null,
-        canceledAt: null,
-        closedAt: null,
-    },
-
-    {
-        modifiedBy: ids.users.student,
-        application: ids.applications.mit,
-        modificationReason:
-            'The host institution changed the available course schedule.',
-
-        academicYear: '2026/2027',
-        expectedMobilityPeriod: 'full_year',
-        student: ids.users.student,
-        hostInstitution: ids.hostInstitutions.mit,
-        referentLecturer: ids.users.lecturer,
-
-        examMappings: [
-            {
-                foreignCourseCode: '6.3900',
-                foreignCourseName: 'Introduction to Machine Learning',
-                foreignCourseCredits: 6,
-                caFoscariCourseCode: 'CT0678',
-                caFoscariCourseName: 'Machine Learning',
-                caFoscariCourseCredits: 6,
-            },
-            {
-                foreignCourseCode: '6.1020',
-                foreignCourseName: 'Software Construction',
-                foreignCourseCredits: 6,
                 caFoscariCourseCode: 'CT0412',
                 caFoscariCourseName: 'Software Engineering',
                 caFoscariCourseCredits: 6,
@@ -377,6 +216,7 @@ const applicationModificationLogs = [
                 foreignCourseCode: '6.4110',
                 foreignCourseName: 'Representation Learning',
                 foreignCourseCredits: 6,
+
                 caFoscariCourseCode: 'CT0720',
                 caFoscariCourseName: 'Deep Learning',
                 caFoscariCourseCredits: 6,
@@ -384,98 +224,253 @@ const applicationModificationLogs = [
         ],
 
         learningAgreement: {
-            file: {
-                fileName: 'la-mit-modification-1.pdf',
-                path: '/uploads/learning-agreements/la-mit-modification-1.pdf',
-                uploadedAt: new Date('2026-09-05'),
-            },
+            filename: 'la-mit-modification-1.pdf',
+            path:
+                '/uploads/learning-agreements/' +
+                'la-mit-modification-1.pdf',
+            uploadedAt: new Date('2026-09-05'),
         },
 
-        mobilityDates: {
-            arrivalDate: new Date('2026-08-25'),
+        applicationReview: {
+            status: 'approved',
+            reviewedBy: ids.users.lecturer,
+            reviewedAt: new Date('2026-05-02'),
+            rejectionReason: null,
         },
 
-        reviewStatus: 'approved',
-        rejectionReason: null,
-        reviewDate: new Date('2026-09-08'),
-        phase: 'in_mobility',
+        hostUniversityArrivalDate: new Date('2026-08-25'),
+        hostUniversityDepartureDate: null,
 
-        preDepartureCompletedAt: new Date('2026-05-05'),
-        canceledAt: null,
-        closedAt: null,
+        transcriptOfRecords: null,
+
+        examReview: {
+            status: 'not_submitted',
+            reviewedBy: null,
+            reviewedAt: null,
+            rejectionReason: null,
+        },
     },
 
+    // After Mobility
+    // ToR, score, examDate 입력 완료 후 Lecturer 검토 대기
     {
-        modifiedBy: ids.users.student,
-        application: ids.applications.mit,
-        modificationReason:
-            'I would like to replace Software Construction with an advanced AI course.',
+        _id: ids.applications.tum,
 
-        academicYear: '2026/2027',
-        expectedMobilityPeriod: 'full_year',
         student: ids.users.student,
-        hostInstitution: ids.hostInstitutions.mit,
         referentLecturer: ids.users.lecturer,
+        hostInstitution: ids.hostInstitutions.tum,
+
+        academicYear: '2025/2026',
+        expectedMobilityPeriod: 'second_semester',
+
+        status: 'am_awaiting_lecturer_review',
 
         examMappings: [
             {
-                foreignCourseCode: '6.3900',
-                foreignCourseName: 'Introduction to Machine Learning',
+                foreignCourseCode: 'IN2396',
+                foreignCourseName:
+                    'Web Application Engineering',
                 foreignCourseCredits: 6,
+
+                caFoscariCourseCode: 'CT0677',
+                caFoscariCourseName:
+                    'Web Applications and Technologies',
+                caFoscariCourseCredits: 6,
+
+                result: {
+                    score: '28',
+                    examDate: new Date('2026-06-20'),
+                },
+            },
+            {
+                foreignCourseCode: 'IN2107',
+                foreignCourseName:
+                    'Natural Language Processing',
+                foreignCourseCredits: 6,
+
+                caFoscariCourseCode: 'CT0550',
+                caFoscariCourseName:
+                    'Natural Language Processing',
+                caFoscariCourseCredits: 6,
+
+                result: {
+                    score: '30L',
+                    examDate: new Date('2026-06-25'),
+                },
+            },
+        ],
+
+        learningAgreement: {
+            filename: 'la-tum.pdf',
+            path: '/uploads/learning-agreements/la-tum.pdf',
+            uploadedAt: new Date('2026-01-18'),
+        },
+
+        applicationReview: {
+            status: 'approved',
+            reviewedBy: ids.users.lecturer,
+            reviewedAt: new Date('2026-01-22'),
+            rejectionReason: null,
+        },
+
+        hostUniversityArrivalDate: new Date('2026-02-10'),
+        hostUniversityDepartureDate: new Date('2026-06-30'),
+
+        transcriptOfRecords: {
+            filename: 'transcript-tum.pdf',
+            path: '/uploads/transcripts/transcript-tum.pdf',
+            uploadedAt: new Date('2026-07-01'),
+        },
+
+        examReview: {
+            status: 'pending',
+            reviewedBy: null,
+            reviewedAt: null,
+            rejectionReason: null,
+        },
+    },
+];
+
+const applicationModifications = [
+    // 승인 완료
+    // 이 내용은 현재 MIT Application에 반영되어 있음
+    {
+        _id: ids.modifications.mitApproved,
+
+        application: ids.applications.mit,
+        requestedBy: ids.users.student,
+
+        description:
+            'The host institution changed the available course schedule.',
+
+        proposedExamMappings: [
+            {
+                foreignCourseCode: '6.3900',
+                foreignCourseName:
+                    'Introduction to Machine Learning',
+                foreignCourseCredits: 6,
+
+                caFoscariCourseCode: 'CT0678',
+                caFoscariCourseName: 'Machine Learning',
+                caFoscariCourseCredits: 6,
+            },
+            {
+                foreignCourseCode: '6.1020',
+                foreignCourseName: 'Software Construction',
+                foreignCourseCredits: 6,
+
+                caFoscariCourseCode: 'CT0412',
+                caFoscariCourseName: 'Software Engineering',
+                caFoscariCourseCredits: 6,
+            },
+            {
+                foreignCourseCode: '6.4110',
+                foreignCourseName: 'Representation Learning',
+                foreignCourseCredits: 6,
+
+                caFoscariCourseCode: 'CT0720',
+                caFoscariCourseName: 'Deep Learning',
+                caFoscariCourseCredits: 6,
+            },
+        ],
+
+        proposedLearningAgreement: {
+            filename: 'la-mit-modification-1.pdf',
+            path:
+                '/uploads/learning-agreements/' +
+                'la-mit-modification-1.pdf',
+            uploadedAt: new Date('2026-09-05'),
+        },
+
+        review: {
+            status: 'approved',
+            reviewedBy: ids.users.lecturer,
+            reviewedAt: new Date('2026-09-08'),
+            rejectionReason: null,
+        },
+    },
+
+    // 거절 완료
+    // Application 원본에는 반영되지 않음
+    {
+        _id: ids.modifications.mitRejected,
+
+        application: ids.applications.mit,
+        requestedBy: ids.users.student,
+
+        description:
+            'I would like to replace Software Construction ' +
+            'with an advanced AI course.',
+
+        proposedExamMappings: [
+            {
+                foreignCourseCode: '6.3900',
+                foreignCourseName:
+                    'Introduction to Machine Learning',
+                foreignCourseCredits: 6,
+
                 caFoscariCourseCode: 'CT0678',
                 caFoscariCourseName: 'Machine Learning',
                 caFoscariCourseCredits: 6,
             },
             {
                 foreignCourseCode: '6.8640',
-                foreignCourseName: 'Advanced Natural Language Processing',
+                foreignCourseName:
+                    'Advanced Natural Language Processing',
                 foreignCourseCredits: 6,
+
                 caFoscariCourseCode: 'CT0550',
-                caFoscariCourseName: 'Natural Language Processing',
+                caFoscariCourseName:
+                    'Natural Language Processing',
+                caFoscariCourseCredits: 6,
+            },
+            {
+                foreignCourseCode: '6.4110',
+                foreignCourseName: 'Representation Learning',
+                foreignCourseCredits: 6,
+
+                caFoscariCourseCode: 'CT0720',
+                caFoscariCourseName: 'Deep Learning',
                 caFoscariCourseCredits: 6,
             },
         ],
 
-        learningAgreement: {
-            file: {
-                fileName: 'la-mit-modification-2.pdf',
-                path: '/uploads/learning-agreements/la-mit-modification-2.pdf',
-                uploadedAt: new Date('2026-09-15'),
-            },
+        proposedLearningAgreement: {
+            filename: 'la-mit-modification-2.pdf',
+            path:
+                '/uploads/learning-agreements/' +
+                'la-mit-modification-2.pdf',
+            uploadedAt: new Date('2026-09-15'),
         },
 
-        mobilityDates: {
-            arrivalDate: new Date('2026-08-25'),
+        review: {
+            status: 'rejected',
+            reviewedBy: ids.users.lecturer,
+            reviewedAt: new Date('2026-09-18'),
+            rejectionReason:
+                'The proposed course does not provide ' +
+                'sufficient credit equivalence.',
         },
-
-        reviewStatus: 'rejected',
-        rejectionReason:
-            'The proposed course does not provide sufficient credit equivalence.',
-        reviewDate: new Date('2026-09-18'),
-        phase: 'in_mobility',
-
-        preDepartureCompletedAt: new Date('2026-05-05'),
-        canceledAt: null,
-        closedAt: null,
     },
 
+    // 현재 Lecturer 검토 대기 중
+    // 아직 Application 원본에는 반영되지 않음
     {
-        modifiedBy: ids.users.student,
+        _id: ids.modifications.mitPending,
+
         application: ids.applications.mit,
-        modificationReason:
+        requestedBy: ids.users.student,
+
+        description:
             'The original course was canceled by the host institution.',
 
-        academicYear: '2026/2027',
-        expectedMobilityPeriod: 'full_year',
-        student: ids.users.student,
-        hostInstitution: ids.hostInstitutions.mit,
-        referentLecturer: ids.users.lecturer,
-
-        examMappings: [
+        proposedExamMappings: [
             {
                 foreignCourseCode: '6.3900',
-                foreignCourseName: 'Introduction to Machine Learning',
+                foreignCourseName:
+                    'Introduction to Machine Learning',
                 foreignCourseCredits: 6,
+
                 caFoscariCourseCode: 'CT0678',
                 caFoscariCourseName: 'Machine Learning',
                 caFoscariCourseCredits: 6,
@@ -484,186 +479,50 @@ const applicationModificationLogs = [
                 foreignCourseCode: '6.4110',
                 foreignCourseName: 'Representation Learning',
                 foreignCourseCredits: 6,
+
                 caFoscariCourseCode: 'CT0720',
                 caFoscariCourseName: 'Deep Learning',
                 caFoscariCourseCredits: 6,
             },
-        ],
-
-        learningAgreement: {
-            file: {
-                fileName: 'la-mit-modification-3.pdf',
-                path: '/uploads/learning-agreements/la-mit-modification-3.pdf',
-                uploadedAt: new Date('2026-09-22'),
-            },
-        },
-
-        mobilityDates: {
-            arrivalDate: new Date('2026-08-25'),
-        },
-
-        reviewStatus: 'pending',
-        rejectionReason: null,
-        reviewDate: null,
-        phase: 'in_mobility',
-
-        preDepartureCompletedAt: new Date('2026-05-05'),
-        canceledAt: null,
-        closedAt: null,
-    },
-
-    {
-        modifiedBy: ids.users.student,
-        application: ids.applications.tum,
-        modificationReason:
-            'The actual examination date and score have been added.',
-
-        academicYear: '2025/2026',
-        expectedMobilityPeriod: 'second_semester',
-        student: ids.users.student,
-        hostInstitution: ids.hostInstitutions.tum,
-        referentLecturer: ids.users.lecturer,
-
-        examMappings: [
             {
-                foreignCourseCode: 'IN2396',
-                foreignCourseName: 'Web Application Engineering',
+                foreignCourseCode: '6.4290',
+                foreignCourseName:
+                    'Advances in Computer Vision',
                 foreignCourseCredits: 6,
-                caFoscariCourseCode: 'CT0677',
-                caFoscariCourseName: 'Web Applications and Technologies',
+
+                caFoscariCourseCode: 'CT0731',
+                caFoscariCourseName: 'Computer Vision',
                 caFoscariCourseCredits: 6,
-                result: {
-                    score: '28',
-                    examDate: new Date('2026-06-20'),
-                },
-            },
-            {
-                foreignCourseCode: 'IN2107',
-                foreignCourseName: 'Natural Language Processing',
-                foreignCourseCredits: 6,
-                caFoscariCourseCode: 'CT0550',
-                caFoscariCourseName: 'Natural Language Processing',
-                caFoscariCourseCredits: 6,
-                result: {
-                    score: '30L',
-                    examDate: new Date('2026-06-25'),
-                },
             },
         ],
 
-        learningAgreement: {
-            file: {
-                fileName: 'la-tum.pdf',
-                path: '/uploads/learning-agreements/la-tum.pdf',
-                uploadedAt: new Date('2026-01-18'),
-            },
+        proposedLearningAgreement: {
+            filename: 'la-mit-modification-3.pdf',
+            path:
+                '/uploads/learning-agreements/' +
+                'la-mit-modification-3.pdf',
+            uploadedAt: new Date('2026-09-22'),
         },
 
-        transcriptOfRecords: {
-            file: {
-                fileName: 'transcript-tum.pdf',
-                path: '/uploads/transcripts/transcript-tum.pdf',
-                uploadedAt: new Date('2026-07-01'),
-            },
+        review: {
+            status: 'pending',
+            reviewedBy: null,
+            reviewedAt: null,
+            rejectionReason: null,
         },
-
-        mobilityDates: {
-            arrivalDate: new Date('2026-02-10'),
-            departureDate: new Date('2026-06-30'),
-        },
-
-        reviewStatus: 'pending',
-        rejectionReason: null,
-        reviewDate: null,
-        phase: 'awaiting_score_approval',
-
-        preDepartureCompletedAt: new Date('2026-01-25'),
-        canceledAt: null,
-        closedAt: null,
-    },
-
-    {
-        modifiedBy: ids.users.lecturer,
-        application: ids.applications.tum,
-        modificationReason: null,
-
-        academicYear: '2025/2026',
-        expectedMobilityPeriod: 'second_semester',
-        student: ids.users.student,
-        hostInstitution: ids.hostInstitutions.tum,
-        referentLecturer: ids.users.lecturer,
-
-        examMappings: [
-            {
-                foreignCourseCode: 'IN2396',
-                foreignCourseName: 'Web Application Engineering',
-                foreignCourseCredits: 6,
-                caFoscariCourseCode: 'CT0677',
-                caFoscariCourseName: 'Web Applications and Technologies',
-                caFoscariCourseCredits: 6,
-                result: {
-                    score: '28',
-                    examDate: new Date('2026-06-20'),
-                },
-            },
-            {
-                foreignCourseCode: 'IN2107',
-                foreignCourseName: 'Natural Language Processing',
-                foreignCourseCredits: 6,
-                caFoscariCourseCode: 'CT0550',
-                caFoscariCourseName: 'Natural Language Processing',
-                caFoscariCourseCredits: 6,
-                result: {
-                    score: '30L',
-                    examDate: new Date('2026-06-25'),
-                },
-            },
-        ],
-
-        learningAgreement: {
-            file: {
-                fileName: 'la-tum.pdf',
-                path: '/uploads/learning-agreements/la-tum.pdf',
-                uploadedAt: new Date('2026-01-18'),
-            },
-        },
-
-        transcriptOfRecords: {
-            file: {
-                fileName: 'transcript-tum-reviewed.pdf',
-                path: '/uploads/transcripts/transcript-tum-reviewed.pdf',
-                uploadedAt: new Date('2026-07-03'),
-            },
-        },
-
-        mobilityDates: {
-            arrivalDate: new Date('2026-02-10'),
-            departureDate: new Date('2026-06-30'),
-        },
-
-        reviewStatus: 'approved',
-        rejectionReason: null,
-        reviewDate: new Date('2026-07-05'),
-        phase: 'awaiting_score_approval',
-
-        preDepartureCompletedAt: new Date('2026-01-25'),
-        canceledAt: null,
-        closedAt: null,
     },
 ];
 
 const seedDatabase = async (): Promise<void> => {
     try {
-        // DB 연결
         await connectDB();
 
-        // 기존 seed 데이터 제거
-        await ApplicationModificationLog.deleteMany({});
+        // 자식 collection부터 삭제
+        await ApplicationModification.deleteMany({});
         await Application.deleteMany({});
-        await User.deleteMany({});
         await HostInstitution.deleteMany({});
-        
-        // User 정보 hashing
+        await User.deleteMany({});
+
         const hashedUsers = await Promise.all(
             users.map(async (user) => ({
                 ...user,
@@ -671,14 +530,15 @@ const seedDatabase = async (): Promise<void> => {
             }))
         );
 
-        // seed 데이터 생성
         await User.insertMany(hashedUsers);
         await HostInstitution.insertMany(hostInstitutions);
         await Application.insertMany(applications);
-        await ApplicationModificationLog.insertMany(applicationModificationLogs);
+        await ApplicationModification.insertMany(
+            applicationModifications
+        );
 
         console.log('Seed data created successfully.');
-    } catch(error: unknown) {
+    } catch (error: unknown) {
         console.error('Failed to create seed data:', error);
         process.exitCode = 1;
     } finally {

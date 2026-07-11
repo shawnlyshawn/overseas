@@ -5,7 +5,7 @@ import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import hostInstitutionRoutes from './routes/host-institution.routes';
 import applicationRoutes from './routes/application.routes';
-import applicationModificationLogRoutes from './routes/application-modification-log.routes';
+import applicationModificationRoutes from './routes/application-modification.routes';
 
 
 const app = express();
@@ -40,8 +40,8 @@ app.use(
 	applicationRoutes
 );
 app.use(
-	'/api/v1/application-modification-logs',
-	applicationModificationLogRoutes
+	'/api/v1/application-modifications',
+	applicationModificationRoutes
 );
 
 export default app;

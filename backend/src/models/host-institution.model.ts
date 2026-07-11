@@ -38,7 +38,7 @@ const hostInstitutionSchema = new Schema(
     {
         timestamps: true,
     }
-)
+);
 
 const HostInstitution = model(
     'HostInstitution',

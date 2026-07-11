@@ -59,7 +59,10 @@ const userSchema = new Schema(
         matriculationNumber: {
             type: String,
             trim: true,
-        }
+            required: function (this: { role: string }) {
+                return this.role === 'student';
+            }
+        },
     },
     {
         timestamps: true, // automatically record createdAt, updatedAt with exact time

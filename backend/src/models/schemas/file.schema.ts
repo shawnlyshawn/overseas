@@ -4,10 +4,10 @@ const { Schema } = mongoose;
 
 const fileSchema = new Schema(
     {
-        fileName: {
+        filename: {
             type: String,
             minLength: 1,
-            maxLength: 30,
+            maxLength: 100,
             trim: true,
         },
         path: {

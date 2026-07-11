@@ -2,7 +2,8 @@ import express from "express";
 import multer from "multer";
 
 import { authenticate, authorize } from '../middlewares/auth.middleware';
-import { getApplications, getApplicationDetail, createNewApplication, updateApplication } from '../controllers/application.controller';
+import { closeApplication, createNewApplication, getApplicationDetail, getApplications, reviewApplication, reviewExamResults, submitExamResults, updateMobilityDates, verifyPreDeparture } from '../controllers/application.controller';
+import { createApplicationModification, getApplicationModifications } from '../controllers/application-modification.controller';
 
 const applicationRoutes = express.Router();
 const storage = multer.diskStorage({
@@ -16,21 +17,18 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// main pages - application lists
 applicationRoutes.get(
     '/',
     authenticate,
     getApplications
 );
 
-// application detail
 applicationRoutes.get(
     '/:applicationId',
     authenticate,
     getApplicationDetail
 );
 
-// create new application
 applicationRoutes.post(
     '/',
     authenticate,
@@ -39,15 +37,72 @@ applicationRoutes.post(
     createNewApplication
 );
 
-// Update Application (form, la file, tor file)
+// applicationRoutes.patch(
+//     '/:applicationId',
+//     authenticate,
+//     upload.fields([
+//         { name: 'learningAgreement', maxCount: 1 },
+//         { name: 'transcriptOfRecords', maxCount: 1 },
+//     ]),
+//     updateApplication
+// );
+
 applicationRoutes.patch(
-    '/:applicationId',
+    '/:applicationId/application-review',
     authenticate,
-    upload.fields([
-        { name: 'learningAgreement', maxCount: 1 },
-        { name: 'transcriptOfRecords', maxCount: 1 },
-    ]),
-    updateApplication
+    authorize('lecturer'),
+    reviewApplication
+);
+
+applicationRoutes.patch(
+    '/:applicationId/pre-departure-verification',
+    authenticate,
+    authorize('office_staff'),
+    verifyPreDeparture
+);
+
+applicationRoutes.patch(
+    '/:applicationId/mobility-dates',
+    authenticate,
+    authorize('student'),
+    updateMobilityDates
+);
+
+applicationRoutes.post(
+    '/:applicationId/application-modifications',
+    authenticate,
+    authorize('student'),
+    upload.single('proposedLearningAgreement'),
+    createApplicationModification
+);
+
+applicationRoutes.get(
+    '/:applicationId/application-modifications',
+    authenticate,
+    authorize('student', 'lecturer'),
+    getApplicationModifications
+);
+
+applicationRoutes.patch(
+    '/:applicationId/exam-results',
+    authenticate,
+    authorize('student'),
+    upload.single('transcriptOfRecords'),
+    submitExamResults
+);
+
+applicationRoutes.patch(
+    '/:applicationId/exam-review',
+    authenticate,
+    authorize('lecturer'),
+    reviewExamResults
+);
+
+applicationRoutes.patch(
+    '/:applicationId/closure',
+    authenticate,
+    authorize('office_staff'),
+    closeApplication
 );
 
 export default applicationRoutes;
