@@ -4,6 +4,9 @@ import type { Request, Response } from 'express';
 import { findApplications, findApplicationById, createApplication } from '../services/application.service';
 import Application from '../models/application.model';
 
+import ApplicationModification from '../models/application-modification.model';
+import ApplicationChangeLog from '../models/application-change-log.model';
+
 type ApplicationStatus =
     | 'bm_awaiting_lecturer_review'
     | 'bm_awaiting_staff_verification'
@@ -73,8 +76,6 @@ export const getApplicationDetail = async (req: Request<{ applicationId: string 
             });
         }
 
-        // ObjectId 형식 자체가 다름
-        // MongoDB ObjectId는 보통 24자리 16진수 문자열
         if (!mongoose.isValidObjectId(applicationId)) {
             return res.status(400).json({
                 result: 'failed',
@@ -82,7 +83,11 @@ export const getApplicationDetail = async (req: Request<{ applicationId: string 
             });
         }
 
-        const application = await findApplicationById(applicationId, user.userId, user.role);
+        const application = await findApplicationById(
+            applicationId,
+            user.userId,
+            user.role
+        );
 
         if (!application) {
             return res.status(404).json({
@@ -91,12 +96,89 @@ export const getApplicationDetail = async (req: Request<{ applicationId: string 
             });
         }
 
+const studentModifications = await ApplicationModification.find({
+    application: applicationId,
+})
+    .populate(
+        'requestedBy',
+        'firstName lastName role'
+    )
+    .populate(
+        'review.reviewedBy',
+        'firstName lastName role'
+    )
+    .sort({
+        createdAt: -1,
+    })
+    .limit(3)
+    .lean();
+
+const directUpdates = await ApplicationChangeLog.find({
+    application: applicationId,
+})
+    .populate(
+        'changedBy',
+        'firstName lastName role'
+    )
+    .sort({
+        createdAt: -1,
+    })
+    .limit(3)
+    .lean();
+
+const studentHistory = studentModifications.map(
+    (modification) => ({
+        historyType: 'student_modification' as const,
+        _id: modification._id,
+        createdAt: modification.createdAt,
+        updatedAt: modification.updatedAt,
+        modifiedBy: modification.requestedBy,
+        description: modification.description,
+        proposedExamMappings:
+            modification.proposedExamMappings,
+        proposedLearningAgreement:
+            modification.proposedLearningAgreement,
+        review: modification.review,
+    })
+);
+
+const directUpdateHistory = directUpdates.map(
+    (changeLog) => ({
+        historyType: 'direct_update' as const,
+        _id: changeLog._id,
+        createdAt: changeLog.createdAt,
+        updatedAt: changeLog.updatedAt,
+        modifiedBy: changeLog.changedBy,
+        changedByRole: changeLog.changedByRole,
+        changedFields: changeLog.changedFields,
+        previousData: changeLog.previousData,
+        updatedData: changeLog.updatedData,
+    })
+);
+
+const applicationHistory = [
+    ...studentHistory,
+    ...directUpdateHistory,
+]
+    .sort(
+        (first, second) =>
+            new Date(second.createdAt).getTime()
+            - new Date(first.createdAt).getTime()
+    )
+    .slice(0, 3);
+
         return res.status(200).json({
             result: 'success',
-            data: application,
+            data: {
+                ...application.toObject(),
+                applicationHistory,
+            },
         });
     } catch (error: unknown) {
-        console.error('Failed to retrieve application detail:', error);
+        console.error(
+            'Failed to retrieve application detail:',
+            error
+        );
 
         return res.status(500).json({
             result: 'failed',
@@ -734,6 +816,536 @@ export const reviewExamResults = async (req: Request<{ applicationId: string }>,
         });
     } catch (error: unknown) {
         console.error('Failed to review exam results:', error);
+
+        return res.status(500).json({
+            result: 'failed',
+            message: 'Internal server error.',
+        });
+    }
+};
+
+export const updateApplication = async (req: Request<{ applicationId: string }>, res: Response) => {
+    try {
+        const user = req.user;
+        const applicationId = req.params.applicationId;
+
+        if (!user) {
+            return res.status(401).json({
+                result: 'failed',
+                message: 'Authentication is required.',
+            });
+        }
+
+        if (
+            user.role !== 'lecturer'
+            && user.role !== 'office_staff'
+        ) {
+            return res.status(403).json({
+                result: 'failed',
+                message: 'Only lecturers and Overseas Office staff can directly modify applications.',
+            });
+        }
+
+        if (!mongoose.isValidObjectId(applicationId)) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Invalid application ID.',
+            });
+        }
+
+        const applicationQuery =
+            user.role === 'lecturer'
+                ? {
+                    _id: applicationId,
+                    referentLecturer: user.userId,
+                }
+                : {
+                    _id: applicationId,
+                };
+
+        const application = await Application.findOne(
+            applicationQuery
+        );
+
+        if (!application) {
+            return res.status(404).json({
+                result: 'failed',
+                message: 'Application not found.',
+            });
+        }
+
+        const previousData = {
+            academicYear:
+                application.academicYear,
+
+            expectedMobilityPeriod:
+                application.expectedMobilityPeriod,
+
+            hostInstitution:
+                application.hostInstitution.toString(),
+
+            referentLecturer:
+                application.referentLecturer.toString(),
+
+            hostUniversityArrivalDate:
+                application.hostUniversityArrivalDate
+                ?? null,
+
+            hostUniversityDepartureDate:
+                application.hostUniversityDepartureDate
+                ?? null,
+
+            examMappings:
+                JSON.parse(
+                    JSON.stringify(
+                        application.examMappings
+                    )
+                ),
+
+            learningAgreement:
+                application.learningAgreement
+                    ? JSON.parse(
+                        JSON.stringify(
+                            application.learningAgreement
+                        )
+                    )
+                    : null,
+
+            transcriptOfRecords:
+                application.transcriptOfRecords
+                    ? JSON.parse(
+                        JSON.stringify(
+                            application.transcriptOfRecords
+                        )
+                    )
+                    : null,
+        };
+
+        const academicYear =
+            req.body.academicYear;
+
+        const expectedMobilityPeriod =
+            req.body.expectedMobilityPeriod;
+
+        const hostInstitution =
+            req.body.hostInstitution;
+
+        const referentLecturer =
+            req.body.referentLecturer;
+
+        const hostUniversityArrivalDate =
+            req.body.hostUniversityArrivalDate;
+
+        const hostUniversityDepartureDate =
+            req.body.hostUniversityDepartureDate;
+
+        if (academicYear !== undefined) {
+            if (
+                typeof academicYear !== 'string'
+                || !/^\d{4}\/\d{4}$/.test(academicYear)
+            ) {
+                return res.status(400).json({
+                    result: 'failed',
+                    message: 'Academic year must be in YYYY/YYYY format.',
+                });
+            }
+
+            application.academicYear =
+                academicYear;
+        }
+
+        if (expectedMobilityPeriod !== undefined) {
+            if (
+                expectedMobilityPeriod !== 'first_semester'
+                && expectedMobilityPeriod !== 'second_semester'
+                && expectedMobilityPeriod !== 'full_year'
+            ) {
+                return res.status(400).json({
+                    result: 'failed',
+                    message: 'Invalid expected mobility period.',
+                });
+            }
+
+            application.expectedMobilityPeriod =
+                expectedMobilityPeriod;
+        }
+
+        if (hostInstitution !== undefined) {
+            if (
+                typeof hostInstitution !== 'string'
+                || !mongoose.isValidObjectId(
+                    hostInstitution
+                )
+            ) {
+                return res.status(400).json({
+                    result: 'failed',
+                    message: 'Invalid host institution.',
+                });
+            }
+
+            application.hostInstitution =
+                new mongoose.Types.ObjectId(
+                    hostInstitution
+                );
+        }
+
+        if (referentLecturer !== undefined) {
+            if (
+                typeof referentLecturer !== 'string'
+                || !mongoose.isValidObjectId(
+                    referentLecturer
+                )
+            ) {
+                return res.status(400).json({
+                    result: 'failed',
+                    message: 'Invalid referent lecturer.',
+                });
+            }
+
+            application.referentLecturer =
+                new mongoose.Types.ObjectId(
+                    referentLecturer
+                );
+        }
+
+        if (req.body.examMappings !== undefined) {
+            if (
+                typeof req.body.examMappings
+                !== 'string'
+            ) {
+                return res.status(400).json({
+                    result: 'failed',
+                    message: 'Exam mappings must be valid JSON.',
+                });
+            }
+
+            let examMappings: unknown;
+
+            try {
+                examMappings = JSON.parse(
+                    req.body.examMappings
+                );
+            } catch {
+                return res.status(400).json({
+                    result: 'failed',
+                    message: 'Exam mappings must be valid JSON.',
+                });
+            }
+
+            if (
+                !Array.isArray(examMappings)
+                || examMappings.length === 0
+            ) {
+                return res.status(400).json({
+                    result: 'failed',
+                    message: 'At least one exam mapping is required.',
+                });
+            }
+
+            application.set(
+                'examMappings',
+                examMappings
+            );
+        }
+
+        let arrivalDate:
+            | Date
+            | null
+            | undefined;
+
+        let departureDate:
+            | Date
+            | null
+            | undefined;
+
+        if (
+            hostUniversityArrivalDate
+            !== undefined
+        ) {
+            if (
+                hostUniversityArrivalDate === ''
+                || hostUniversityArrivalDate === null
+            ) {
+                arrivalDate = null;
+            } else {
+                arrivalDate =
+                    new Date(
+                        hostUniversityArrivalDate
+                    );
+
+                if (
+                    Number.isNaN(
+                        arrivalDate.getTime()
+                    )
+                ) {
+                    return res.status(400).json({
+                        result: 'failed',
+                        message: 'Invalid arrival date.',
+                    });
+                }
+            }
+        }
+
+        if (
+            hostUniversityDepartureDate
+            !== undefined
+        ) {
+            if (
+                hostUniversityDepartureDate === ''
+                || hostUniversityDepartureDate === null
+            ) {
+                departureDate = null;
+            } else {
+                departureDate =
+                    new Date(
+                        hostUniversityDepartureDate
+                    );
+
+                if (
+                    Number.isNaN(
+                        departureDate.getTime()
+                    )
+                ) {
+                    return res.status(400).json({
+                        result: 'failed',
+                        message: 'Invalid departure date.',
+                    });
+                }
+            }
+        }
+
+        const finalArrivalDate =
+            arrivalDate !== undefined
+                ? arrivalDate
+                : application.hostUniversityArrivalDate;
+
+        const finalDepartureDate =
+            departureDate !== undefined
+                ? departureDate
+                : application.hostUniversityDepartureDate;
+
+        if (
+            finalDepartureDate
+            && !finalArrivalDate
+        ) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Arrival date is required before the departure date.',
+            });
+        }
+
+        if (
+            finalArrivalDate
+            && finalDepartureDate
+            && finalDepartureDate
+                < finalArrivalDate
+        ) {
+            return res.status(400).json({
+                result: 'failed',
+                message: 'Departure date cannot be earlier than arrival date.',
+            });
+        }
+
+        if (arrivalDate !== undefined) {
+            application.hostUniversityArrivalDate =
+                arrivalDate;
+        }
+
+        if (departureDate !== undefined) {
+            application.hostUniversityDepartureDate =
+                departureDate;
+        }
+
+        const files = req.files as
+            | {
+                [fieldname: string]:
+                    Express.Multer.File[];
+            }
+            | undefined;
+
+        const learningAgreementFile =
+            files?.['learningAgreement']?.[0];
+
+        const transcriptFile =
+            files?.['transcriptOfRecords']?.[0];
+
+        if (learningAgreementFile) {
+            application.learningAgreement = {
+                filename:
+                    learningAgreementFile.filename,
+                path:
+                    learningAgreementFile.path,
+                uploadedAt:
+                    new Date(),
+            };
+        }
+
+        if (transcriptFile) {
+            application.transcriptOfRecords = {
+                filename:
+                    transcriptFile.filename,
+                path:
+                    transcriptFile.path,
+                uploadedAt:
+                    new Date(),
+            };
+        }
+
+        await application.save();
+
+        const updatedData = {
+            academicYear:
+                application.academicYear,
+
+            expectedMobilityPeriod:
+                application.expectedMobilityPeriod,
+
+            hostInstitution:
+                application.hostInstitution.toString(),
+
+            referentLecturer:
+                application.referentLecturer.toString(),
+
+            hostUniversityArrivalDate:
+                application.hostUniversityArrivalDate
+                ?? null,
+
+            hostUniversityDepartureDate:
+                application.hostUniversityDepartureDate
+                ?? null,
+
+            examMappings:
+                JSON.parse(
+                    JSON.stringify(
+                        application.examMappings
+                    )
+                ),
+
+            learningAgreement:
+                application.learningAgreement
+                    ? JSON.parse(
+                        JSON.stringify(
+                            application.learningAgreement
+                        )
+                    )
+                    : null,
+
+            transcriptOfRecords:
+                application.transcriptOfRecords
+                    ? JSON.parse(
+                        JSON.stringify(
+                            application.transcriptOfRecords
+                        )
+                    )
+                    : null,
+        };
+
+        const fieldLabels: Record<
+            keyof typeof previousData,
+            string
+        > = {
+            academicYear:
+                'Academic Year',
+
+            expectedMobilityPeriod:
+                'Expected Mobility Period',
+
+            hostInstitution:
+                'Host Institution',
+
+            referentLecturer:
+                'Referent Lecturer',
+
+            hostUniversityArrivalDate:
+                'Arrival Date',
+
+            hostUniversityDepartureDate:
+                'Departure Date',
+
+            examMappings:
+                'Exam Mappings',
+
+            learningAgreement:
+                'Learning Agreement',
+
+            transcriptOfRecords:
+                'Transcript of Records',
+        };
+
+        const changedFieldKeys = (
+            Object.keys(
+                fieldLabels
+            ) as Array<
+                keyof typeof previousData
+            >
+        ).filter((field) => {
+            const previousValue =
+                previousData[field];
+
+            const updatedValue =
+                updatedData[field];
+
+            return (
+                JSON.stringify(previousValue)
+                !== JSON.stringify(updatedValue)
+            );
+        });
+
+        if (changedFieldKeys.length > 0) {
+            const changedFields =
+                changedFieldKeys.map(
+                    (field) =>
+                        fieldLabels[field]
+                );
+
+            const previousChangedData:
+                Record<string, unknown> = {};
+
+            const updatedChangedData:
+                Record<string, unknown> = {};
+
+            for (
+                const field
+                of changedFieldKeys
+            ) {
+                previousChangedData[field] =
+                    previousData[field];
+
+                updatedChangedData[field] =
+                    updatedData[field];
+            }
+
+            await ApplicationChangeLog.create({
+                application:
+                    application._id,
+
+                changedBy:
+                    new mongoose.Types.ObjectId(
+                        user.userId
+                    ),
+
+                changedByRole:
+                    user.role,
+
+                changedFields,
+
+                previousData:
+                    previousChangedData,
+
+                updatedData:
+                    updatedChangedData,
+            });
+        }
+
+        return res.status(200).json({
+            result: 'success',
+            data: application,
+        });
+    } catch (error: unknown) {
+        console.error(
+            'Failed to update application:',
+            error
+        );
 
         return res.status(500).json({
             result: 'failed',

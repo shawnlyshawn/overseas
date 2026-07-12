@@ -23,7 +23,6 @@ applicationModificationRoutes.patch(
 applicationModificationRoutes.get(
     '/:modificationId',
     authenticate,
-    authorize('student', 'lecturer'),
     getApplicationModificationDetail
 );
 

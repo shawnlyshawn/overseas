@@ -23,20 +23,12 @@
 
 .login-heading h1 {
     margin: 5px 0 8px;
-    font-size: 30px;
+    font-size: 45px;
 }
 
 .login-heading p {
     margin: 0;
     color: #666666;
-}
-
-.eyebrow {
-    color: #ac0033 !important;
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
 }
 
 .form-field {
@@ -46,7 +38,7 @@
 .form-field label {
     display: block;
     margin-bottom: 7px;
-    font-size: 14px;
+    font-size: 20px;
     font-weight: 600;
 }
 
@@ -68,7 +60,7 @@
 .field-error {
     margin: 6px 0 0;
     color: #a30000;
-    font-size: 12px;
+    font-size: 15px;
 }
 
 .login-button {
@@ -94,7 +86,7 @@
     border-radius: 6px;
     background: #f8dddd;
     color: #9b1c1c;
-    font-size: 13px;
+    font-size: 15px;
 }
 
 .login-button:disabled {

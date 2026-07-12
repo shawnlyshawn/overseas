@@ -165,7 +165,7 @@ const applications = [
         referentLecturer: ids.users.lecturer2, // minjae
         hostInstitution: ids.hostInstitutions.cuk, // cuk
 
-        academicYear: '2027/2028',
+        academicYear: '2026/2027',
         expectedMobilityPeriod: 'first_semester',
 
         status: 'bm_awaiting_lecturer_review',
@@ -230,7 +230,7 @@ const applications = [
         referentLecturer: ids.users.lecturer1, // heungmin
         hostInstitution: ids.hostInstitutions.mit, // mit
 
-        academicYear: '2026/2027',
+        academicYear: '2025/2026',
         expectedMobilityPeriod: 'full_year',
 
         status: 'dm_in_progress',

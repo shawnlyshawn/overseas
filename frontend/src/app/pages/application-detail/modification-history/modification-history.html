@@ -1,0 +1,500 @@
+<section class="detail-card">
+    <div class="section-heading">
+        <h2>Recent Application History</h2>
+        <p>Showing up to 3 most recent records.</p>
+    </div>
+
+    @if (isLoading) {
+        <p class="loading-message">
+            Loading Recent Application History...
+        </p>
+    } @else if (errorMessage) {
+        <p class="error-message">
+            {{ errorMessage }}
+        </p>
+    } @else if (applicationHistory.length === 0) {
+        <p class="empty-message">
+            No Application History Found.
+        </p>
+    } @else {
+        <div class="modification-history">
+            @for (
+                history of applicationHistory;
+                track history._id
+            ) {
+                <article class="modification-card">
+                    @if (
+                        history.historyType
+                        === 'student_modification'
+                    ) {
+                        <div class="modification-card-header">
+                            <div>
+                                <h3>Modification Request</h3>
+
+                                <p class="modification-date">
+                                    {{
+                                        history.createdAt
+                                        | date: 'dd.MM.yyyy HH:mm'
+                                    }}
+                                </p>
+                            </div>
+
+                            <span
+                                class="badge"
+                                [class.badge-pending]="history.review.status === 'pending'"
+                                [class.badge-approved]="history.review.status === 'approved'"
+                                [class.badge-rejected]="history.review.status === 'rejected'"
+                            >
+                                {{
+                                    getReviewStatusLabel(
+                                        history.review.status
+                                    )
+                                }}
+                            </span>
+                        </div>
+
+                        <div class="modification-content">
+                            <div class="modification-main">
+                                <div class="modification-field">
+                                    <span class="modification-label">
+                                        Modified By
+                                    </span>
+
+                                    <p class="modification-value">
+                                        {{
+                                            history.modifiedBy.firstName
+                                            | titlecase
+                                        }}
+                                        {{
+                                            history.modifiedBy.lastName
+                                            | uppercase
+                                        }}
+                                    </p>
+                                </div>
+
+                                <div class="modification-field">
+                                    <span class="modification-label">
+                                        Role
+                                    </span>
+
+                                    <p class="modification-value">
+                                        {{
+                                            getRoleLabel(
+                                                history.modifiedBy.role
+                                            )
+                                        }}
+                                    </p>
+                                </div>
+
+                                <div class="modification-field">
+                                    <span class="modification-label">
+                                        Modification Reason
+                                    </span>
+
+                                    <p class="modification-value">
+                                        {{ history.description }}
+                                    </p>
+                                </div>
+
+                                <div class="modification-field">
+                                    <span class="modification-label">
+                                        Proposed Learning Agreement
+                                    </span>
+
+                                    @if (
+                                        history.proposedLearningAgreement
+                                    ) {
+                                        <a
+                                            [href]="'http://localhost:3000' + history.proposedLearningAgreement.path"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="file-link"
+                                        >
+                                            {{
+                                                history
+                                                    .proposedLearningAgreement
+                                                    .filename
+                                            }}
+                                        </a>
+                                    } @else {
+                                        <span class="empty-value">
+                                            Not Uploaded
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="modification-review">
+                                <div class="modification-field">
+                                    <span class="modification-label">
+                                        Reviewed At
+                                    </span>
+
+                                    <p class="modification-value">
+                                        @if (
+                                            history.review.reviewedAt
+                                        ) {
+                                            {{
+                                                history.review.reviewedAt
+                                                | date: 'dd.MM.yyyy HH:mm'
+                                            }}
+                                        } @else {
+                                            -
+                                        }
+                                    </p>
+                                </div>
+
+                                @if (
+                                    history.review.status
+                                    === 'rejected'
+                                ) {
+                                    <div class="modification-field rejection-box">
+                                        <span class="modification-label">
+                                            Rejection Reason
+                                        </span>
+
+                                        <p class="modification-value">
+                                            {{
+                                                history.review.rejectionReason
+                                                ?? '-'
+                                            }}
+                                        </p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="mapping-toggle-wrapper">
+                            <button
+                                type="button"
+                                class="mapping-toggle"
+                                (click)="toggleModificationMappings(history._id)"
+                            >
+                                {{
+                                    expandedModificationId
+                                    === history._id
+                                        ? 'Hide Proposed Exam Mappings'
+                                        : 'View Proposed Exam Mappings'
+                                }}
+                            </button>
+                        </div>
+
+                        @if (
+                            expandedModificationId
+                            === history._id
+                        ) {
+                            <div class="proposed-mappings">
+                                <div class="table-wrapper">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Foreign Course Code</th>
+                                                <th>Foreign Course Name</th>
+                                                <th>Foreign Credits</th>
+                                                <th>Ca' Foscari Course Code</th>
+                                                <th>Ca' Foscari Course Name</th>
+                                                <th>Ca' Foscari Credits</th>
+                                                <th>Exam Date</th>
+                                                <th>Score</th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody>
+                                            @for (
+                                                mapping of history.proposedExamMappings;
+                                                track mapping._id ?? $index
+                                            ) {
+                                                <tr>
+                                                    <td>
+                                                        {{ mapping.foreignCourseCode }}
+                                                    </td>
+
+                                                    <td>
+                                                        {{ mapping.foreignCourseName }}
+                                                    </td>
+
+                                                    <td>
+                                                        {{ mapping.foreignCourseCredits }}
+                                                    </td>
+
+                                                    <td>
+                                                        {{ mapping.caFoscariCourseCode }}
+                                                    </td>
+
+                                                    <td>
+                                                        {{ mapping.caFoscariCourseName }}
+                                                    </td>
+
+                                                    <td>
+                                                        {{ mapping.caFoscariCourseCredits }}
+                                                    </td>
+
+                                                    <td>
+                                                        @if (
+                                                            mapping.result?.examDate;
+                                                            as examDate
+                                                        ) {
+                                                            {{
+                                                                examDate
+                                                                | date: 'dd.MM.yyyy'
+                                                            }}
+                                                        } @else {
+                                                            <span class="empty-value">
+                                                                -
+                                                            </span>
+                                                        }
+                                                    </td>
+
+                                                    <td>
+                                                        {{
+                                                            mapping.result?.score
+                                                            ?? '-'
+                                                        }}
+                                                    </td>
+                                                </tr>
+                                            } @empty {
+                                                <tr>
+                                                    <td
+                                                        colspan="8"
+                                                        class="empty-message"
+                                                    >
+                                                        No Proposed Exam Mappings Found.
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        }
+                    } @else {
+                        <div class="modification-card-header">
+                            <div>
+                                <h3>Application Update</h3>
+
+                                <p class="modification-date">
+                                    {{
+                                        history.createdAt
+                                        | date: 'dd.MM.yyyy HH:mm'
+                                    }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="modification-content">
+                            <div class="modification-main">
+                                <div class="modification-field">
+                                    <span class="modification-label">
+                                        Modified By
+                                    </span>
+
+                                    <p class="modification-value">
+                                        {{
+                                            history.modifiedBy.firstName
+                                            | titlecase
+                                        }}
+                                        {{
+                                            history.modifiedBy.lastName
+                                            | uppercase
+                                        }}
+                                    </p>
+                                </div>
+
+                                <div class="modification-field">
+                                    <span class="modification-label">
+                                        Role
+                                    </span>
+
+                                    <p class="modification-value">
+                                        {{
+                                            getRoleLabel(
+                                                history.modifiedBy.role
+                                            )
+                                        }}
+                                    </p>
+                                </div>
+
+                                <div class="modification-field">
+                                    <span class="modification-label">
+                                        Changed Fields
+                                    </span>
+
+                                    <p class="modification-value">
+                                        {{
+                                            history.changedFields.join(', ')
+                                        }}
+                                    </p>
+                                </div>
+
+                                <div class="modification-field">
+                                    <span class="modification-label">
+                                        Learning Agreement
+                                    </span>
+
+                                    @if (
+                                        getDirectUpdateLearningAgreement(history);
+                                        as learningAgreement
+                                    ) {
+                                        <a
+                                            [href]="'http://localhost:3000' + learningAgreement.path"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="file-link"
+                                        >
+                                            {{ learningAgreement.filename }}
+                                        </a>
+                                    } @else {
+                                        <span class="empty-value">
+                                            Not Changed
+                                        </span>
+                                    }
+                                </div>
+
+                                <div class="modification-field">
+                                    <span class="modification-label">
+                                        Transcript of Records
+                                    </span>
+
+                                    @if (
+                                        getDirectUpdateTranscript(history);
+                                        as transcript
+                                    ) {
+                                        <a
+                                            [href]="'http://localhost:3000' + transcript.path"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="file-link"
+                                        >
+                                            {{ transcript.filename }}
+                                        </a>
+                                    } @else {
+                                        <span class="empty-value">
+                                            Not Changed
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (
+                            hasDirectUpdateExamMappings(history)
+                        ) {
+                            <div class="mapping-toggle-wrapper">
+                                <button
+                                    type="button"
+                                    class="mapping-toggle"
+                                    (click)="toggleModificationMappings(history._id)"
+                                >
+                                    {{
+                                        expandedModificationId
+                                        === history._id
+                                            ? 'Hide Updated Exam Mappings'
+                                            : 'View Updated Exam Mappings'
+                                    }}
+                                </button>
+                            </div>
+
+                            @if (
+                                expandedModificationId
+                                === history._id
+                            ) {
+                                <div class="proposed-mappings">
+                                    <div class="table-wrapper">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>Foreign Course Code</th>
+                                                    <th>Foreign Course Name</th>
+                                                    <th>Foreign Credits</th>
+                                                    <th>Ca' Foscari Course Code</th>
+                                                    <th>Ca' Foscari Course Name</th>
+                                                    <th>Ca' Foscari Credits</th>
+                                                    <th>Exam Date</th>
+                                                    <th>Score</th>
+                                                </tr>
+                                            </thead>
+
+                                            <tbody>
+                                                @for (
+                                                    mapping of getDirectUpdateExamMappings(history);
+                                                    track mapping._id ?? $index
+                                                ) {
+                                                    <tr>
+                                                        <td>
+                                                            {{
+                                                                mapping
+                                                                    .foreignCourseCode
+                                                            }}
+                                                        </td>
+
+                                                        <td>
+                                                            {{
+                                                                mapping
+                                                                    .foreignCourseName
+                                                            }}
+                                                        </td>
+
+                                                        <td>
+                                                            {{
+                                                                mapping
+                                                                    .foreignCourseCredits
+                                                            }}
+                                                        </td>
+
+                                                        <td>
+                                                            {{
+                                                                mapping
+                                                                    .caFoscariCourseCode
+                                                            }}
+                                                        </td>
+
+                                                        <td>
+                                                            {{
+                                                                mapping
+                                                                    .caFoscariCourseName
+                                                            }}
+                                                        </td>
+
+                                                        <td>
+                                                            {{
+                                                                mapping
+                                                                    .caFoscariCourseCredits
+                                                            }}
+                                                        </td>
+
+                                                        <td>
+                                                            @if (
+                                                                mapping.result?.examDate;
+                                                                as examDate
+                                                            ) {
+                                                                {{
+                                                                    examDate
+                                                                    | date: 'dd.MM.yyyy'
+                                                                }}
+                                                            } @else {
+                                                                <span class="empty-value">
+                                                                    -
+                                                                </span>
+                                                            }
+                                                        </td>
+
+                                                        <td>
+                                                            {{
+                                                                mapping.result?.score
+                                                                ?? '-'
+                                                            }}
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    }
+                </article>
+            }
+        </div>
+    }
+</section>

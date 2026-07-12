@@ -15,7 +15,7 @@
                 routerLinkActive="active-tab"
                 class="page-tab"
             >
-                Review Modification Requests
+                Application Modification Requests
             </a>
         </nav>
     </div>
@@ -68,9 +68,9 @@
                             <td>
                                 <span
                                     class="badge"
-                                    [class.badge-initial]="request.type === 'initial_application'"
-                                    [class.badge-modification]="request.type === 'mobility_modification'"
-                                    [class.badge-results]="request.type === 'exam_results'"
+                                    [class.badge-initial]="request.type === 'bm_create_application'"
+                                    [class.badge-modification]="request.type === 'dm_exam_info_update'"
+                                    [class.badge-results]="request.type === 'am_exam_result_upload'"
                                 >
                                     {{ getReviewTypeLabel(request.type) }}
                                 </span>
@@ -88,7 +88,7 @@
                                     [queryParams]="request.reviewQueryParams"
                                     class="button button-secondary"
                                 >
-                                    Review
+                                    Confirm
                                 </a>
                             </td>
                         </tr>

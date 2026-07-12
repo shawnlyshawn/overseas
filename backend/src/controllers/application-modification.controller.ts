@@ -147,12 +147,7 @@ export const getApplicationModificationsByApplication = async (req: Request<{ ap
             applicationFilter.student = user.userId;
         } else if (user.role === 'lecturer') {
             applicationFilter.referentLecturer = user.userId;
-        } else {
-            return res.status(403).json({
-                result: 'failed',
-                message: 'Forbidden.',
-            });
-        }
+        } else if (user.role === 'office_staff') {}
 
         const application = await Application.findOne(applicationFilter);
 
@@ -224,12 +219,7 @@ export const getApplicationModificationDetail = async (req: Request<{ modificati
             applicationFilter.student = user.userId;
         } else if (user.role === 'lecturer') {
             applicationFilter.referentLecturer = user.userId;
-        } else {
-            return res.status(403).json({
-                result: 'failed',
-                message: 'Forbidden.',
-            });
-        }
+        } else {};
 
         const application = await Application.findOne(applicationFilter);
 

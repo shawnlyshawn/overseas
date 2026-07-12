@@ -1,3 +1,4 @@
+import type { ApplicationModificationDetail } from './application-modification-log.model';
 import { HostInstitution } from './host-institution.model';
 import { UserSummary } from './user.model';
 
@@ -45,8 +46,10 @@ export interface ExamMapping {
     caFoscariCourseCode: string;
     caFoscariCourseName: string;
     caFoscariCourseCredits: number;
-    examDate?: string | null;
-    score?: number | null;
+    result?: {
+        score?: string | null;
+        examDate?: string | null;
+    };
 }
 
 export interface ReviewInfo {
@@ -73,6 +76,54 @@ export interface Application {
     status: ApplicationStatus;
     createdAt: string;
     updatedAt: string;
+}
+
+export interface ApplicationHistoryUser {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    role: 'student' | 'lecturer' | 'office_staff';
+}
+
+export interface StudentModificationHistoryItem {
+    historyType: 'student_modification';
+    _id: string;
+    createdAt: string;
+    updatedAt: string;
+    modifiedBy: ApplicationHistoryUser;
+    description: string;
+    proposedExamMappings: Application['examMappings'];
+    proposedLearningAgreement: {
+        filename: string;
+        path: string;
+        uploadedAt: string;
+    };
+    review: {
+        status: 'pending' | 'approved' | 'rejected';
+        reviewedBy?: ApplicationHistoryUser | null;
+        reviewedAt?: string | null;
+        rejectionReason?: string | null;
+    };
+}
+
+export interface DirectUpdateHistoryItem {
+    historyType: 'direct_update';
+    _id: string;
+    createdAt: string;
+    updatedAt: string;
+    modifiedBy: ApplicationHistoryUser;
+    changedByRole: 'lecturer' | 'office_staff';
+    changedFields: string[];
+    previousData: Record<string, unknown>;
+    updatedData: Record<string, unknown>;
+}
+
+export type ApplicationHistoryItem =
+    | StudentModificationHistoryItem
+    | DirectUpdateHistoryItem;
+
+export interface ApplicationDetailResponse extends Application {
+    applicationHistory: ApplicationHistoryItem[];
 }
 
 export interface CreateApplicationRequest {

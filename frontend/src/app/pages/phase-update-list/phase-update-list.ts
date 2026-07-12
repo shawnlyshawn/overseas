@@ -3,9 +3,13 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
-import { Application, ApplicationStatus, ExpectedMobilityPeriod } from '../../models/application.model';
 import { ApiResponse } from '../../models/api-response.model';
+import { Application, ApplicationStatus, ExpectedMobilityPeriod } from '../../models/application.model';
 import { ApplicationService } from '../../services/application.service';
+
+type StaffReviewType =
+    | 'bm_staff_verification'
+    | 'am_application_closure';
 
 @Component({
     selector: 'app-phase-update-list',
@@ -16,49 +20,14 @@ import { ApplicationService } from '../../services/application.service';
 export class PhaseUpdateList implements OnInit {
     applications: Application[] = [];
     isLoading = false;
-    processingApplicationId: string | null = null;
     errorMessage = '';
 
-    constructor(private readonly applicationService: ApplicationService) {}
+    constructor(
+        private readonly applicationService: ApplicationService
+    ) {}
 
     ngOnInit(): void {
         this.loadApplications();
-    }
-
-    completeBeforeMobility(applicationId: string): void {
-        this.processingApplicationId = applicationId;
-        this.errorMessage = '';
-
-        this.applicationService.completePreDepartureVerification(applicationId).subscribe({
-            next: () => {
-                this.processingApplicationId = null;
-                this.loadApplications();
-            },
-            error: (error: HttpErrorResponse) => {
-                this.errorMessage = error.error?.message ?? 'Failed to complete before mobility verification.';
-                this.processingApplicationId = null;
-            }
-        });
-    }
-
-    closeApplication(applicationId: string): void {
-        this.processingApplicationId = applicationId;
-        this.errorMessage = '';
-
-        this.applicationService.closeApplication(applicationId).subscribe({
-            next: () => {
-                this.processingApplicationId = null;
-                this.loadApplications();
-            },
-            error: (error: HttpErrorResponse) => {
-                this.errorMessage = error.error?.message ?? 'Failed to close application.';
-                this.processingApplicationId = null;
-            }
-        });
-    }
-
-    isProcessing(applicationId: string): boolean {
-        return this.processingApplicationId === applicationId;
     }
 
     getFullName(firstName: string, lastName: string): string {
@@ -90,21 +59,34 @@ export class PhaseUpdateList implements OnInit {
         return labels[status] ?? status;
     }
 
+    getReviewType(application: Application): StaffReviewType {
+        if (application.status === 'bm_awaiting_staff_verification') {
+            return 'bm_staff_verification';
+        }
+
+        return 'am_application_closure';
+    }
+
     private loadApplications(): void {
         this.isLoading = true;
         this.errorMessage = '';
 
         this.applicationService.getApplications().subscribe({
             next: (response: ApiResponse<Application[]>) => {
-                this.applications = response.data.filter((application) =>
-                    application.status === 'bm_awaiting_staff_verification'
-                    || application.status === 'am_awaiting_staff_verification'
-                );
+                this.applications = response.data.filter((application) => {
+                    return (
+                        application.status === 'bm_awaiting_staff_verification'
+                        || application.status === 'am_awaiting_staff_verification'
+                    );
+                });
 
                 this.isLoading = false;
             },
             error: (error: HttpErrorResponse) => {
-                this.errorMessage = error.error?.message ?? 'Failed to load applications.';
+                this.errorMessage =
+                    error.error?.message
+                    ?? 'Failed to load applications.';
+
                 this.isLoading = false;
             }
         });
@@ -115,6 +97,9 @@ export class PhaseUpdateList implements OnInit {
             return '';
         }
 
-        return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+        return (
+            value.charAt(0).toUpperCase()
+            + value.slice(1).toLowerCase()
+        );
     }
 }

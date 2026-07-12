@@ -2,7 +2,7 @@ import express from "express";
 import multer from "multer";
 
 import { authenticate, authorize } from '../middlewares/auth.middleware';
-import { closeApplication, createNewApplication, getApplicationDetail, getApplications, reviewApplication, reviewExamResults, submitExamResults, updateMobilityDates, verifyPreDeparture } from '../controllers/application.controller';
+import { closeApplication, createNewApplication, getApplicationDetail, getApplications, reviewApplication, reviewExamResults, submitExamResults, updateMobilityDates, verifyPreDeparture, updateApplication } from '../controllers/application.controller';
 import { createApplicationModification, getApplicationModificationsByApplication } from '../controllers/application-modification.controller';
 
 const applicationRoutes = express.Router();
@@ -71,6 +71,23 @@ applicationRoutes.get(
     authenticate,
     authorize('student', 'lecturer'),
     getApplicationModificationsByApplication
+);
+
+applicationRoutes.patch(
+    '/:applicationId',
+    authenticate,
+    authorize('lecturer', 'office_staff'),
+    upload.fields([
+        {
+            name: 'learningAgreement',
+            maxCount: 1,
+        },
+        {
+            name: 'transcriptOfRecords',
+            maxCount: 1,
+        },
+    ]),
+    updateApplication
 );
 
 applicationRoutes.patch(

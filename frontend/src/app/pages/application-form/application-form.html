@@ -1,7 +1,6 @@
 <main class="page">
     <div class="page-header">
         <div>
-            <p class="eyebrow">Overseas Mobility</p>
             <h1>{{ isEditMode ? 'Modify Application' : 'Create New Application' }}</h1>
         </div>
     </div>
@@ -92,6 +91,50 @@
             </section>
 
             <section class="form-card">
+            @if (isEditMode && isDuringMobility) {
+                <section class="form-section">
+                    <h2>Modification Reason</h2>
+
+                    <div class="form-field">
+                        <label for="modificationDescription">
+                            Reason for Modification
+                        </label>
+
+                        <textarea
+                            id="modificationDescription"
+                            formControlName="modificationDescription"
+                            rows="5"
+                            maxlength="500"
+                            placeholder="Please explain why you are requesting this modification."
+                        ></textarea>
+
+                        <div class="field-hint">
+                            Maximum 500 characters
+                        </div>
+
+                        @if (
+                            applicationForm.controls.modificationDescription.touched
+                            && applicationForm.controls.modificationDescription.hasError('required')
+                        ) {
+                            <p class="field-error">
+                                Modification reason is required.
+                            </p>
+                        }
+
+                        @if (
+                            applicationForm.controls.modificationDescription.touched
+                            && applicationForm.controls.modificationDescription.hasError('maxlength')
+                        ) {
+                            <p class="field-error">
+                                Modification reason cannot exceed 500 characters.
+                            </p>
+                        }
+                    </div>
+                </section>
+            }
+            </section>
+
+            <section class="form-card">
                 <div class="section-header">
                     <h2>Exam Mappings</h2>
 
@@ -138,6 +181,18 @@
                                 </div>
 
                                 <div class="form-field">
+                                    <label [for]="'caFoscariCourseCode-' + index">
+                                        Ca' Foscari Course Code
+                                    </label>
+
+                                    <input
+                                        [id]="'caFoscariCourseCode-' + index"
+                                        type="text"
+                                        formControlName="caFoscariCourseCode"
+                                    >
+                                </div>
+
+                                <div class="form-field">
                                     <label [for]="'foreignCourseName-' + index">
                                         Foreign Course Name
                                     </label>
@@ -146,6 +201,18 @@
                                         [id]="'foreignCourseName-' + index"
                                         type="text"
                                         formControlName="foreignCourseName"
+                                    >
+                                </div>
+
+                                <div class="form-field">
+                                    <label [for]="'caFoscariCourseName-' + index">
+                                        Ca' Foscari Course Name
+                                    </label>
+
+                                    <input
+                                        [id]="'caFoscariCourseName-' + index"
+                                        type="text"
+                                        formControlName="caFoscariCourseName"
                                     >
                                 </div>
 
@@ -162,29 +229,7 @@
                                     >
                                 </div>
 
-                                <div class="form-field">
-                                    <label [for]="'caFoscariCourseCode-' + index">
-                                        Ca' Foscari Course Code
-                                    </label>
-
-                                    <input
-                                        [id]="'caFoscariCourseCode-' + index"
-                                        type="text"
-                                        formControlName="caFoscariCourseCode"
-                                    >
-                                </div>
-
-                                <div class="form-field">
-                                    <label [for]="'caFoscariCourseName-' + index">
-                                        Ca' Foscari Course Name
-                                    </label>
-
-                                    <input
-                                        [id]="'caFoscariCourseName-' + index"
-                                        type="text"
-                                        formControlName="caFoscariCourseName"
-                                    >
-                                </div>
+                                
 
                                 <div class="form-field">
                                     <label [for]="'caFoscariCourseCredits-' + index">
@@ -271,12 +316,6 @@
                     }
                 </div>
             </section>
-
-            @if (errorMessage) {
-                <p class="error-message">
-                    {{ errorMessage }}
-                </p>
-            }
 
             <div class="form-actions">
                 <button

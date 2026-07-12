@@ -3,12 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { ApiResponse, PaginatedApiResponse } from '../models/api-response.model';
-import {
-    Application,
-    CreateApplicationRequest,
-    ReviewStatus,
-    UpdateApplicationRequest
-} from '../models/application.model';
+import { Application, ApplicationDetailResponse, ReviewStatus } from '../models/application.model';
 
 @Injectable({
     providedIn: 'root'
@@ -25,44 +20,48 @@ export class ApplicationService {
             params = params.set('reviewStatus', reviewStatus);
         }
 
-        return this.http.get<PaginatedApiResponse<Application>>(this.apiUrl, { params });
+        return this.http.get<PaginatedApiResponse<Application>>(
+            this.apiUrl,
+            { params }
+        );
     }
 
-    getApplicationById(applicationId: string): Observable<ApiResponse<Application>> {
-        return this.http.get<ApiResponse<Application>>(`${this.apiUrl}/${applicationId}`);
+    getApplicationById(applicationId: string): Observable<ApiResponse<ApplicationDetailResponse>> {
+        return this.http.get<ApiResponse<ApplicationDetailResponse>>(
+            `${this.apiUrl}/${applicationId}`
+        );
     }
 
     createApplication(body: FormData): Observable<ApiResponse<Application>> {
-        return this.http.post<ApiResponse<Application>>(this.apiUrl, body);
-    }
-
-    updateApplication(applicationId: string, formData: FormData) {
-        return this.http.patch(
-            `${this.apiUrl}/${applicationId}/`,
-            formData
+        return this.http.post<ApiResponse<Application>>(
+            this.apiUrl,
+            body
         );
     }
 
-    uploadLearningAgreement(applicationId: string, file: File): Observable<ApiResponse<Application>> {
-        const formData = new FormData();
-        formData.append('learningAgreement', file);
-
+    updateMobilityDates(
+        applicationId: string,
+        body: {
+            hostUniversityArrivalDate?: string | null;
+            hostUniversityDepartureDate?: string | null;
+        }
+    ): Observable<ApiResponse<Application>> {
         return this.http.patch<ApiResponse<Application>>(
-            `${this.apiUrl}/${applicationId}/learning-agreement`,
-            formData
+            `${this.apiUrl}/${applicationId}/mobility-dates`,
+            body
         );
     }
 
-    uploadTranscriptOfRecords(applicationId: string, file: File): Observable<ApiResponse<Application>> {
-        const formData = new FormData();
-        formData.append('transcriptOfRecords', file);
-
+    submitExamResults(
+        applicationId: string,
+        formData: FormData
+    ): Observable<ApiResponse<Application>> {
         return this.http.patch<ApiResponse<Application>>(
-            `${this.apiUrl}/${applicationId}/transcript-of-records`,
+            `${this.apiUrl}/${applicationId}/exam-results`,
             formData
         );
     }
-    
+
     completePreDepartureVerification(applicationId: string): Observable<ApiResponse<Application>> {
         return this.http.patch<ApiResponse<Application>>(
             `${this.apiUrl}/${applicationId}/pre-departure-verification`,
@@ -81,23 +80,38 @@ export class ApplicationService {
         );
     }
 
-    reviewApplication(applicationId: string, body: {
-        decision: 'approved' | 'rejected';
-        rejectionReason?: string;
-    }): Observable<ApiResponse<Application>> {
+    reviewApplication(
+        applicationId: string,
+        body: {
+            decision: 'approved' | 'rejected';
+            rejectionReason?: string;
+        }
+    ): Observable<ApiResponse<Application>> {
         return this.http.patch<ApiResponse<Application>>(
             `${this.apiUrl}/${applicationId}/application-review`,
             body
         );
     }
 
-    reviewExamResults(applicationId: string, body: {
-        decision: 'approved' | 'rejected';
-        rejectionReason?: string;
-    }): Observable<ApiResponse<Application>> {
+    reviewExamResults(
+        applicationId: string,
+        body: {
+            decision: 'approved' | 'rejected';
+            rejectionReason?: string;
+        }
+    ): Observable<ApiResponse<Application>> {
         return this.http.patch<ApiResponse<Application>>(
             `${this.apiUrl}/${applicationId}/exam-review`,
             body
+        );
+    }
+    updateApplication(
+        applicationId: string,
+        formData: FormData
+    ): Observable<ApiResponse<Application>> {
+        return this.http.patch<ApiResponse<Application>>(
+            `${this.apiUrl}/${applicationId}`,
+            formData
         );
     }
 }

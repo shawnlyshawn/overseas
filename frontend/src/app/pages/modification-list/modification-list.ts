@@ -9,7 +9,10 @@ import { ApplicationModificationListItem } from '../../models/application-modifi
 import { ApplicationModificationLogService } from '../../services/application-modification-log.service';
 import { ApplicationService } from '../../services/application.service';
 
-type ReviewRequestType = 'initial_application' | 'mobility_modification' | 'exam_results';
+type ReviewRequestType =
+    | 'bm_create_application'
+    | 'dm_exam_info_update'
+    | 'am_exam_result_upload';
 
 interface ReviewRequestRow {
     id: string;
@@ -69,9 +72,9 @@ export class ModificationList implements OnInit {
 
     getReviewTypeLabel(type: ReviewRequestType): string {
         const labels: Record<ReviewRequestType, string> = {
-            initial_application: 'Initial Application',
-            mobility_modification: 'Mobility Modification',
-            exam_results: 'Exam Results'
+            bm_create_application: 'Create Application',
+            dm_exam_info_update: 'Modify Exam Mapping',
+            am_exam_result_upload: 'Upload Exam Results'
         };
 
         return labels[type];
@@ -147,8 +150,8 @@ export class ModificationList implements OnInit {
             .map((application) => {
                 const type: ReviewRequestType =
                     application.status === 'bm_awaiting_lecturer_review'
-                        ? 'initial_application'
-                        : 'exam_results';
+                        ? 'bm_create_application'
+                        : 'am_exam_result_upload'
 
                 return {
                     id: application._id,
@@ -183,7 +186,7 @@ export class ModificationList implements OnInit {
             .map((modification) => ({
                 id: modification._id,
                 applicationId: modification.application._id,
-                type: 'mobility_modification',
+                type: 'dm_exam_info_update' ,
                 createdAt: modification.createdAt,
                 student: {
                     firstName: modification.application.student.firstName,

@@ -1,5 +1,3 @@
-<!-- frontend/src/app/pages/application-list/application-list.html -->
-
 <section class="page">
     <div class="page-top">
         @if (isLecturer()) {
@@ -18,7 +16,7 @@
                     routerLinkActive="active-tab"
                     class="page-tab"
                 >
-                    Review Modification Requests
+                    Application Modification Requests
                 </a>
             </nav>
         } @else if (isOfficeStaff()) {
@@ -76,7 +74,6 @@
                         }
 
                         <th>Review Status</th>
-                        <th>Rejection Reason</th>
                         <th>Application Status</th>
                         <th></th>
                     </tr>
@@ -131,14 +128,6 @@
                                 >
                                     {{ getReviewStatusLabel(getCurrentReviewStatus(application)) }}
                                 </span>
-                            </td>
-
-                            <td>
-                                @if (getCurrentReviewStatus(application) === 'rejected') {
-                                    {{ getCurrentRejectionReason(application) ?? '-' }}
-                                } @else {
-                                    -
-                                }
                             </td>
 
                             <td>

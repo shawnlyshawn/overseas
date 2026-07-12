@@ -21,12 +21,14 @@
     </div>
 
     @if (isLoading) {
-        <p class="message">Loading Applications...</p>
+        <p class="message">
+            Loading Applications...
+        </p>
+    } @else if (errorMessage) {
+        <p class="error-message">
+            {{ errorMessage }}
+        </p>
     } @else {
-        @if (errorMessage) {
-            <p class="error-message">{{ errorMessage }}</p>
-        }
-
         <div class="table-wrapper">
             <table>
                 <thead>
@@ -46,70 +48,72 @@
                 <tbody>
                     @for (application of applications; track application._id) {
                         <tr>
-                            <td>{{ application.createdAt | date: 'dd.MM.yyyy' }}</td>
+                            <td>
+                                {{ application.createdAt | date: 'dd.MM.yyyy' }}
+                            </td>
 
                             <td>
-                                {{ getFullName(
-                                    application.student.firstName,
-                                    application.student.lastName
-                                ) }}
+                                {{
+                                    getFullName(
+                                        application.student.firstName,
+                                        application.student.lastName
+                                    )
+                                }}
                             </td>
 
                             <td>
                                 {{ application.student.matriculationNumber ?? '-' }}
                             </td>
 
-                            <td>{{ application.academicYear }}</td>
-
                             <td>
-                                {{ getMobilityPeriodLabel(application.expectedMobilityPeriod) }}
+                                {{ application.academicYear }}
                             </td>
 
-                            <td>{{ application.hostInstitution.name }}</td>
+                            <td>
+                                {{
+                                    getMobilityPeriodLabel(
+                                        application.expectedMobilityPeriod
+                                    )
+                                }}
+                            </td>
 
                             <td>
-                                {{ getFullName(
-                                    application.referentLecturer.firstName,
-                                    application.referentLecturer.lastName
-                                ) }}
+                                {{ application.hostInstitution.name }}
+                            </td>
+
+                            <td>
+                                {{
+                                    getFullName(
+                                        application.referentLecturer.firstName,
+                                        application.referentLecturer.lastName
+                                    )
+                                }}
                             </td>
 
                             <td>
                                 <span class="status-badge">
-                                    {{ getApplicationStatusLabel(application.status) }}
+                                    {{
+                                        getApplicationStatusLabel(
+                                            application.status
+                                        )
+                                    }}
                                 </span>
                             </td>
 
                             <td>
-                                @if (application.status === 'bm_awaiting_staff_verification') {
-                                    <button
-                                        type="button"
-                                        class="button button-primary"
-                                        [disabled]="isProcessing(application._id)"
-                                        (click)="completeBeforeMobility(application._id)"
-                                    >
-                                        {{
-                                            isProcessing(application._id)
-                                                ? 'Processing...'
-                                                : 'Complete Before Mobility'
-                                        }}
-                                    </button>
-                                }
-
-                                @if (application.status === 'am_awaiting_staff_verification') {
-                                    <button
-                                        type="button"
-                                        class="button button-close"
-                                        [disabled]="isProcessing(application._id)"
-                                        (click)="closeApplication(application._id)"
-                                    >
-                                        {{
-                                            isProcessing(application._id)
-                                                ? 'Processing...'
-                                                : 'Close Application'
-                                        }}
-                                    </button>
-                                }
+                                <a
+                                    [routerLink]="[
+                                        '/applications',
+                                        application._id
+                                    ]"
+                                    [queryParams]="{
+                                        reviewMode: true,
+                                        reviewType: getReviewType(application)
+                                    }"
+                                    class="button button-secondary"
+                                >
+                                    Confirm
+                                </a>
                             </td>
                         </tr>
                     } @empty {

@@ -89,6 +89,7 @@ th {
     border-radius: 5px;
     font-size: 14px;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .badge-initial {

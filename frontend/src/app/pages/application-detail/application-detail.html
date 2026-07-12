@@ -1,21 +1,30 @@
 <main class="page">
     @if (isLoading) {
-        <p class="loading-message">Loading Application...</p>
+        <p class="loading-message">
+            Loading Application...
+        </p>
     } @else if (errorMessage) {
-        <p class="error-message">{{ errorMessage }}</p>
+        <p class="error-message">
+            {{ errorMessage }}
+        </p>
     } @else if (application) {
         <section class="page-header">
             <div>
                 <h1>Application Detail</h1>
             </div>
 
-            @if (!isReviewMode && application.status !== 'closed') {
-                <a
-                    [routerLink]="['/applications', application._id, 'edit']"
+            @if (
+                !isReviewMode
+                && (
+                    currentUserRole === 'student' || currentUserRole === 'lecturer' || currentUserRole === 'office_staff')
+            ) {
+                <button
+                    type="button"
                     class="button button-primary"
+                    (click)="onModify()"
                 >
                     Modify
-                </a>
+                </button>
             }
         </section>
 
@@ -26,33 +35,45 @@
                 <div>
                     <dt>Student</dt>
                     <dd>
-                        {{ getFullName(
-                            application.student.firstName,
-                            application.student.lastName
-                        ) }}
+                        {{
+                            getFullName(
+                                application.student.firstName,
+                                application.student.lastName
+                            )
+                        }}
                     </dd>
                 </div>
 
                 <div>
                     <dt>Matriculation Number</dt>
-                    <dd>{{ application.student.matriculationNumber ?? '-' }}</dd>
+                    <dd>
+                        {{ application.student.matriculationNumber ?? '-' }}
+                    </dd>
                 </div>
 
                 <div>
                     <dt>Academic Year</dt>
-                    <dd>{{ application.academicYear }}</dd>
+                    <dd>
+                        {{ application.academicYear }}
+                    </dd>
                 </div>
 
                 <div>
                     <dt>Expected Mobility Period</dt>
                     <dd>
-                        {{ getMobilityPeriodLabel(application.expectedMobilityPeriod) }}
+                        {{
+                            getMobilityPeriodLabel(
+                                application.expectedMobilityPeriod
+                            )
+                        }}
                     </dd>
                 </div>
 
                 <div>
                     <dt>Host Institution</dt>
-                    <dd>{{ application.hostInstitution.name }}</dd>
+                    <dd>
+                        {{ application.hostInstitution.name }}
+                    </dd>
                 </div>
 
                 <div>
@@ -66,10 +87,12 @@
                 <div>
                     <dt>Referent Lecturer</dt>
                     <dd>
-                        {{ getFullName(
-                            application.referentLecturer.firstName,
-                            application.referentLecturer.lastName
-                        ) }}
+                        {{
+                            getFullName(
+                                application.referentLecturer.firstName,
+                                application.referentLecturer.lastName
+                            )
+                        }}
                     </dd>
                 </div>
 
@@ -80,66 +103,32 @@
                             class="badge badge-status"
                             [class.badge-closed]="application.status === 'closed'"
                         >
-                            {{ getApplicationStatusLabel(application.status) }}
+                            {{
+                                getApplicationStatusLabel(
+                                    application.status
+                                )
+                            }}
                         </span>
                     </dd>
                 </div>
 
                 <div>
                     <dt>Created At</dt>
-                    <dd>{{ application.createdAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
+                    <dd>
+                        {{
+                            application.createdAt
+                            | date: 'dd.MM.yyyy HH:mm'
+                        }}
+                    </dd>
                 </div>
 
                 <div>
                     <dt>Last Updated</dt>
-                    <dd>{{ application.updatedAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
-                </div>
-            </dl>
-        </section>
-
-        <section class="detail-card">
-            <h2>Application Review</h2>
-
-            <dl class="detail-grid">
-                <div>
-                    <dt>Review Status</dt>
                     <dd>
-                        <span
-                            class="badge"
-                            [class.badge-not-submitted]="application.applicationReview.status === 'not_submitted'"
-                            [class.badge-pending]="application.applicationReview.status === 'pending'"
-                            [class.badge-approved]="application.applicationReview.status === 'approved'"
-                            [class.badge-rejected]="application.applicationReview.status === 'rejected'"
-                        >
-                            {{ getReviewStatusLabel(application.applicationReview.status) }}
-                        </span>
-                    </dd>
-                </div>
-
-                <div>
-                    <dt>Reviewed At</dt>
-                    <dd>
-                        @if (application.applicationReview.reviewedAt) {
-                            {{ application.applicationReview.reviewedAt | date: 'dd.MM.yyyy HH:mm' }}
-                        } @else {
-                            <span class="empty-value">-</span>
-                        }
-                    </dd>
-                </div>
-
-                <div>
-                    <dt>Reviewed By</dt>
-                    <dd>{{ application.applicationReview.reviewedBy ?? '-' }}</dd>
-                </div>
-
-                <div>
-                    <dt>Rejection Reason</dt>
-                    <dd>
-                        @if (application.applicationReview.status === 'rejected') {
-                            {{ application.applicationReview.rejectionReason ?? '-' }}
-                        } @else {
-                            -
-                        }
+                        {{
+                            application.updatedAt
+                            | date: 'dd.MM.yyyy HH:mm'
+                        }}
                     </dd>
                 </div>
             </dl>
@@ -153,9 +142,14 @@
                     <dt>Arrival Date</dt>
                     <dd>
                         @if (application.hostUniversityArrivalDate) {
-                            {{ application.hostUniversityArrivalDate | date: 'dd.MM.yyyy' }}
+                            {{
+                                application.hostUniversityArrivalDate
+                                | date: 'dd.MM.yyyy'
+                            }}
                         } @else {
-                            <span class="empty-value">Not Entered</span>
+                            <span class="empty-value">
+                                Not Entered
+                            </span>
                         }
                     </dd>
                 </div>
@@ -164,9 +158,14 @@
                     <dt>Departure Date</dt>
                     <dd>
                         @if (application.hostUniversityDepartureDate) {
-                            {{ application.hostUniversityDepartureDate | date: 'dd.MM.yyyy' }}
+                            {{
+                                application.hostUniversityDepartureDate
+                                | date: 'dd.MM.yyyy'
+                            }}
                         } @else {
-                            <span class="empty-value">Not Entered</span>
+                            <span class="empty-value">
+                                Not Entered
+                            </span>
                         }
                     </dd>
                 </div>
@@ -190,18 +189,9 @@
                                 {{ application.learningAgreement.filename }}
                             </a>
                         } @else {
-                            <span class="empty-value">Not Uploaded</span>
-                        }
-                    </dd>
-                </div>
-
-                <div>
-                    <dt>Learning Agreement Uploaded At</dt>
-                    <dd>
-                        @if (application.learningAgreement?.uploadedAt) {
-                            {{ application.learningAgreement?.uploadedAt | date: 'dd.MM.yyyy HH:mm' }}
-                        } @else {
-                            <span class="empty-value">-</span>
+                            <span class="empty-value">
+                                Not Uploaded
+                            </span>
                         }
                     </dd>
                 </div>
@@ -219,18 +209,9 @@
                                 {{ application.transcriptOfRecords.filename }}
                             </a>
                         } @else {
-                            <span class="empty-value">Not Uploaded</span>
-                        }
-                    </dd>
-                </div>
-
-                <div>
-                    <dt>Transcript Uploaded At</dt>
-                    <dd>
-                        @if (application.transcriptOfRecords?.uploadedAt) {
-                            {{ application.transcriptOfRecords?.uploadedAt | date: 'dd.MM.yyyy HH:mm' }}
-                        } @else {
-                            <span class="empty-value">-</span>
+                            <span class="empty-value">
+                                Not Uploaded
+                            </span>
                         }
                     </dd>
                 </div>
@@ -256,26 +237,58 @@
                     </thead>
 
                     <tbody>
-                        @for (mapping of application.examMappings; track mapping._id ?? $index) {
+                        @for (
+                            mapping of application.examMappings;
+                            track mapping._id ?? $index
+                        ) {
                             <tr>
-                                <td>{{ mapping.foreignCourseCode }}</td>
-                                <td>{{ mapping.foreignCourseName }}</td>
-                                <td>{{ mapping.foreignCourseCredits }}</td>
-                                <td>{{ mapping.caFoscariCourseCode }}</td>
-                                <td>{{ mapping.caFoscariCourseName }}</td>
-                                <td>{{ mapping.caFoscariCourseCredits }}</td>
                                 <td>
-                                    @if (mapping.examDate) {
-                                        {{ mapping.examDate | date: 'dd.MM.yyyy' }}
+                                    {{ mapping.foreignCourseCode }}
+                                </td>
+
+                                <td>
+                                    {{ mapping.foreignCourseName }}
+                                </td>
+
+                                <td>
+                                    {{ mapping.foreignCourseCredits }}
+                                </td>
+
+                                <td>
+                                    {{ mapping.caFoscariCourseCode }}
+                                </td>
+
+                                <td>
+                                    {{ mapping.caFoscariCourseName }}
+                                </td>
+
+                                <td>
+                                    {{ mapping.caFoscariCourseCredits }}
+                                </td>
+
+                                <td>
+                                    @if (mapping.result?.examDate) {
+                                        {{
+                                            mapping.result?.examDate
+                                            | date: 'dd.MM.yyyy'
+                                        }}
                                     } @else {
-                                        <span class="empty-value">-</span>
+                                        <span class="empty-value">
+                                            -
+                                        </span>
                                     }
                                 </td>
-                                <td>{{ mapping.score ?? '-' }}</td>
+
+                                <td>
+                                    {{ mapping.result?.score ?? '-' }}
+                                </td>
                             </tr>
                         } @empty {
                             <tr>
-                                <td colspan="8" class="empty-message">
+                                <td
+                                    colspan="8"
+                                    class="empty-message"
+                                >
                                     No Exam Mappings Found.
                                 </td>
                             </tr>
@@ -284,138 +297,119 @@
                 </table>
             </div>
         </section>
-
-        <section class="detail-card">
-            <h2>Exam Review</h2>
-
-            <dl class="detail-grid">
-                <div>
-                    <dt>Review Status</dt>
-                    <dd>
-                        <span
-                            class="badge"
-                            [class.badge-not-submitted]="application.examReview.status === 'not_submitted'"
-                            [class.badge-pending]="application.examReview.status === 'pending'"
-                            [class.badge-approved]="application.examReview.status === 'approved'"
-                            [class.badge-rejected]="application.examReview.status === 'rejected'"
-                        >
-                            {{ getReviewStatusLabel(application.examReview.status) }}
-                        </span>
-                    </dd>
-                </div>
-
-                <div>
-                    <dt>Reviewed At</dt>
-                    <dd>
-                        @if (application.examReview.reviewedAt) {
-                            {{ application.examReview.reviewedAt | date: 'dd.MM.yyyy HH:mm' }}
-                        } @else {
-                            <span class="empty-value">-</span>
-                        }
-                    </dd>
-                </div>
-
-                <div>
-                    <dt>Reviewed By</dt>
-                    <dd>{{ application.examReview.reviewedBy ?? '-' }}</dd>
-                </div>
-
-                <div>
-                    <dt>Rejection Reason</dt>
-                    <dd>
-                        @if (application.examReview.status === 'rejected') {
-                            {{ application.examReview.rejectionReason ?? '-' }}
-                        } @else {
-                            -
-                        }
-                    </dd>
-                </div>
-            </dl>
-        </section>
+<!-- 
+        <app-modification-history
+            [applicationHistory]="applicationHistory"
+            [isLoading]="isLoadingModifications"
+            [errorMessage]="modificationErrorMessage"
+        ></app-modification-history> -->
 
         @if (
             isReviewMode
-            && reviewType === 'initial_application'
-            && application.applicationReview.status === 'pending'
+            && currentUserRole === 'office_staff'
+            && reviewType === 'bm_staff_verification'
+            && application.status === 'bm_awaiting_staff_verification'
         ) {
-            <section class="review-card">
-    <h2>Application Review Decision</h2>
+            <section class="detail-card">
+                <h2>Pre-departure Verification</h2>
 
-    <div class="decision-buttons">
-        <button
-            type="button"
-            class="decision-button"
-            [class.selected]="selectedDecision === 'approved'"
-            (click)="selectDecision('approved')"
-        >
-            Approve
-        </button>
-
-        <button
-            type="button"
-            class="decision-button"
-            [class.selected]="selectedDecision === 'rejected'"
-            (click)="selectDecision('rejected')"
-        >
-            Reject
-        </button>
-    </div>
-
-    @if (selectedDecision === 'rejected') {
-        <div class="rejection-field">
-            <label for="rejectionReason">Rejection Reason</label>
-
-            <textarea
-                id="rejectionReason"
-                rows="4"
-                [formControl]="rejectionReason"
-                placeholder="Enter the reason for rejection."
-            ></textarea>
-
-            @if (
-                rejectionReason.touched
-                && rejectionReason.hasError('required')
-            ) {
-                <p class="field-error">
-                    Rejection reason is required.
+                <p>
+                    The referent lecturer has approved this application.
+                    Confirm that the application contains the required information
+                    and complete the pre-departure phase.
                 </p>
-            }
-        </div>
-    }
 
-    <div class="review-actions">
-        <button
-            type="button"
-            class="button button-secondary"
-            (click)="cancelReview()"
-        >
-            Cancel
-        </button>
+                @if (staffActionErrorMessage) {
+                    <p class="error-message">
+                        {{ staffActionErrorMessage }}
+                    </p>
+                }
 
-        <button
-            type="button"
-            class="button button-primary"
-            [disabled]="!selectedDecision || isSubmitting"
-            (click)="submitReview()"
-        >
-            {{ isSubmitting ? 'Submitting...' : 'Submit Decision' }}
-        </button>
-    </div>
-</section>
+                <div class="review-actions">
+                    <button
+                        type="button"
+                        class="button button-secondary"
+                        [disabled]="isSubmittingStaffAction"
+                        (click)="cancelReview()"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="button"
+                        class="button button-primary"
+                        [disabled]="isSubmittingStaffAction"
+                        (click)="completePreDepartureVerification()"
+                    >
+                        {{
+                            isSubmittingStaffAction
+                                ? 'Submitting...'
+                                : 'Confirm'
+                        }}
+                    </button>
+                </div>
+            </section>
         }
 
         @if (
             isReviewMode
-            && reviewType === 'exam_results'
-            && application.examReview.status === 'pending'
+            && currentUserRole === 'office_staff'
+            && reviewType === 'am_application_closure'
+            && application.status === 'am_awaiting_staff_verification'
         ) {
             <section class="detail-card">
-                <h2>Exam Results Review Decision</h2>
+                <h2>Application Closure</h2>
+
+                <p>
+                    The Transcript of Records and exam results have been approved
+                    by the referent lecturer. Confirm the application and close
+                    the mobility process.
+                </p>
+
+                @if (staffActionErrorMessage) {
+                    <p class="error-message">
+                        {{ staffActionErrorMessage }}
+                    </p>
+                }
+
+                <div class="review-actions">
+                    <button
+                        type="button"
+                        class="button button-secondary"
+                        [disabled]="isSubmittingStaffAction"
+                        (click)="cancelReview()"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="button"
+                        class="button button-primary"
+                        [disabled]="isSubmittingStaffAction"
+                        (click)="closeApplication()"
+                    >
+                        {{
+                            isSubmittingStaffAction
+                                ? 'Submitting...'
+                                : 'Confirm'
+                        }}
+                    </button>
+                </div>
+            </section>
+        }
+
+        @if (
+            isReviewMode
+            && reviewType === 'bm_create_application'
+            && application.applicationReview.status === 'pending'
+        ) {
+            <section class="review-card">
+                <h2>Application Review Decision</h2>
 
                 <div class="decision-buttons">
                     <button
                         type="button"
-                        class="button button-approve"
+                        class="decision-button"
                         [class.selected]="selectedDecision === 'approved'"
                         (click)="selectDecision('approved')"
                     >
@@ -424,7 +418,7 @@
 
                     <button
                         type="button"
-                        class="button button-reject"
+                        class="decision-button"
                         [class.selected]="selectedDecision === 'rejected'"
                         (click)="selectDecision('rejected')"
                     >
@@ -433,21 +427,31 @@
                 </div>
 
                 @if (selectedDecision === 'rejected') {
-                    <div class="form-field">
-                        <label for="rejectionReason">Rejection Reason</label>
+                    <div class="rejection-field">
+                        <label for="applicationRejectionReason">
+                            Rejection Reason
+                        </label>
 
                         <textarea
-                            id="rejectionReason"
-                            rows="5"
+                            id="applicationRejectionReason"
+                            rows="4"
                             [formControl]="rejectionReason"
                             placeholder="Enter the reason for rejection."
                         ></textarea>
 
-                        @if (rejectionReason.touched && rejectionReason.hasError('required')) {
-                            <p class="field-error">Rejection reason is required.</p>
+                        @if (
+                            rejectionReason.touched
+                            && rejectionReason.hasError('required')
+                        ) {
+                            <p class="field-error">
+                                Rejection reason is required.
+                            </p>
                         }
 
-                        @if (rejectionReason.touched && rejectionReason.hasError('maxlength')) {
+                        @if (
+                            rejectionReason.touched
+                            && rejectionReason.hasError('maxlength')
+                        ) {
                             <p class="field-error">
                                 Rejection reason must not exceed 500 characters.
                             </p>
@@ -456,13 +460,109 @@
                 }
 
                 @if (reviewErrorMessage) {
-                    <p class="error-message">{{ reviewErrorMessage }}</p>
+                    <p class="error-message">
+                        {{ reviewErrorMessage }}
+                    </p>
                 }
 
-                <div class="form-actions">
+                <div class="review-actions">
                     <button
                         type="button"
                         class="button button-secondary"
+                        [disabled]="isSubmittingReview"
+                        (click)="cancelReview()"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="button"
+                        class="button button-primary"
+                        [disabled]="!selectedDecision || isSubmittingReview"
+                        (click)="submitReview()"
+                    >
+                        {{
+                            isSubmittingReview
+                                ? 'Submitting...'
+                                : 'Submit Decision'
+                        }}
+                    </button>
+                </div>
+            </section>
+        }
+
+        @if (
+            isReviewMode
+            && reviewType === 'am_exam_result_upload'
+            && application.examReview.status === 'pending'
+        ) {
+            <section class="detail-card">
+                <h2>Exam Results Review Decision</h2>
+
+                <div class="decision-buttons">
+                    <button
+                        type="button"
+                        class="decision-button"
+                        [class.selected]="selectedDecision === 'approved'"
+                        (click)="selectDecision('approved')"
+                    >
+                        Approve
+                    </button>
+
+                    <button
+                        type="button"
+                        class="decision-button"
+                        [class.selected]="selectedDecision === 'rejected'"
+                        (click)="selectDecision('rejected')"
+                    >
+                        Reject
+                    </button>
+                </div>
+
+                @if (selectedDecision === 'rejected') {
+                    <div class="rejection-field">
+                        <label for="examRejectionReason">
+                            Rejection Reason
+                        </label>
+
+                        <textarea
+                            id="examRejectionReason"
+                            rows="5"
+                            [formControl]="rejectionReason"
+                            placeholder="Enter the reason for rejection."
+                        ></textarea>
+
+                        @if (
+                            rejectionReason.touched
+                            && rejectionReason.hasError('required')
+                        ) {
+                            <p class="field-error">
+                                Rejection reason is required.
+                            </p>
+                        }
+
+                        @if (
+                            rejectionReason.touched
+                            && rejectionReason.hasError('maxlength')
+                        ) {
+                            <p class="field-error">
+                                Rejection reason must not exceed 500 characters.
+                            </p>
+                        }
+                    </div>
+                }
+
+                @if (reviewErrorMessage) {
+                    <p class="error-message">
+                        {{ reviewErrorMessage }}
+                    </p>
+                }
+
+                <div class="review-actions">
+                    <button
+                        type="button"
+                        class="button button-secondary"
+                        [disabled]="isSubmittingReview"
                         (click)="cancelReview()"
                     >
                         Cancel
@@ -474,7 +574,11 @@
                         [disabled]="isSubmittingReview || !selectedDecision"
                         (click)="submitReview()"
                     >
-                        {{ isSubmittingReview ? 'Submitting...' : 'Submit Decision' }}
+                        {{
+                            isSubmittingReview
+                                ? 'Submitting...'
+                                : 'Submit Decision'
+                        }}
                     </button>
                 </div>
             </section>
@@ -482,7 +586,7 @@
 
         @if (
             isReviewMode
-            && reviewType === 'initial_application'
+            && reviewType === 'bm_create_application'
             && application.applicationReview.status !== 'pending'
         ) {
             <section class="detail-card">
@@ -490,13 +594,24 @@
 
                 <p>
                     This application review has already been
-                    <strong>{{ getReviewStatusLabel(application.applicationReview.status) }}</strong>.
+                    <strong>
+                        {{
+                            getReviewStatusLabel(
+                                application.applicationReview.status
+                            )
+                        }}
+                    </strong>.
                 </p>
 
-                @if (application.applicationReview.status === 'rejected') {
+                @if (
+                    application.applicationReview.status === 'rejected'
+                ) {
                     <p>
                         <strong>Rejection Reason:</strong>
-                        {{ application.applicationReview.rejectionReason ?? '-' }}
+                        {{
+                            application.applicationReview.rejectionReason
+                            ?? '-'
+                        }}
                     </p>
                 }
             </section>
@@ -504,7 +619,7 @@
 
         @if (
             isReviewMode
-            && reviewType === 'exam_results'
+            && reviewType === 'am_exam_result_upload'
             && application.examReview.status !== 'pending'
         ) {
             <section class="detail-card">
@@ -512,20 +627,39 @@
 
                 <p>
                     This exam results review has already been
-                    <strong>{{ getReviewStatusLabel(application.examReview.status) }}</strong>.
+                    <strong>
+                        {{
+                            getReviewStatusLabel(
+                                application.examReview.status
+                            )
+                        }}
+                    </strong>.
                 </p>
 
                 @if (application.examReview.status === 'rejected') {
                     <p>
                         <strong>Rejection Reason:</strong>
-                        {{ application.examReview.rejectionReason ?? '-' }}
+                        {{
+                            application.examReview.rejectionReason
+                            ?? '-'
+                        }}
                     </p>
                 }
             </section>
         }
 
         <div class="form-actions">
-            @if (isReviewMode) {
+            @if (
+                isReviewMode
+                && currentUserRole === 'office_staff'
+            ) {
+                <a
+                    routerLink="/phase-updates"
+                    class="button button-secondary"
+                >
+                    Back to Update Phases
+                </a>
+            } @else if (isReviewMode) {
                 <a
                     routerLink="/modifications"
                     class="button button-secondary"

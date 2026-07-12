@@ -16,15 +16,6 @@
     font-size: 32px;
 }
 
-.eyebrow {
-    margin: 0;
-    color: #ac0033;
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-}
-
 .form-card {
     margin-bottom: 24px;
     padding: 24px;
@@ -135,4 +126,31 @@
     .page {
         padding: 24px;
     }
+}
+
+textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #cfcfcf;
+    border-radius: 5px;
+    font: inherit;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #c7003d;
+}
+
+.field-hint {
+    margin-top: 6px;
+    color: #666;
+    font-size: 13px;
+}
+
+.field-error {
+    margin-top: 6px;
+    color: #c7003d;
+    font-size: 13px;
 }
