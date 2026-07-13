@@ -8,61 +8,79 @@
 * Visual Studio Code
 * MongoDB Compass
 
+### Important
+
+All Docker commands must be run from the `overseas` project directory, where the `docker-compose.yml` file is located.
+
+If the project is inside another folder, first move to the `overseas` directory:
+
+```bash
+cd overseas
+```
+
 ### Start the Application
 
 1. Start Docker Desktop.
 
-2. Open the project folder in Visual Studio Code.
+2. Open the project in Visual Studio Code.
 
-3. Open a new terminal and run the following commands from the `overseas` project directory:
+3. Open a new terminal.
+
+4. Make sure that the terminal is currently in the `overseas` project directory.
+
+5. Reset the existing containers and MongoDB volume:
 
 ```bash
 docker compose down -v
 ```
 
-Removes the existing containers and MongoDB volume to reset the database.
+This command removes the existing containers and MongoDB volume and resets the database.
+
+6. Build the Docker images and start the frontend, backend, and MongoDB containers:
 
 ```bash
 docker compose up --build -d
 ```
 
-Builds the Docker images and starts the frontend, backend, and MongoDB containers.
+7. Insert the seed data into MongoDB:
 
 ```bash
 docker compose exec backend npm run seed
 ```
 
-Inserts the seed data into MongoDB.
-
-4. Check that all containers are running:
+8. Check that all containers are running:
 
 ```bash
 docker compose ps
 ```
 
-5. Connect to the database using MongoDB Compass.
+9. Connect to the database using MongoDB Compass.
 
-6. Check the container logs if necessary:
+10. Open the application in a browser:
+
+```text
+http://localhost:4200
+```
+
+### Check the Logs
+
+If necessary, check the backend logs:
 
 ```bash
 docker compose logs backend
 ```
 
+Check the frontend logs:
+
 ```bash
 docker compose logs frontend
-```
-
-7. Open the application in a browser:
-
-```text
-http://localhost:4200
 ```
 
 ---
 
 ## Stop the Application
 
-Run the following command from the project directory:
+Run the following command from the `overseas` project directory:
 
 ```bash
 docker compose down
