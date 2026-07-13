@@ -4,13 +4,14 @@ import { Component, OnInit } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService } from '../../services/auth.service'
+
 
 import { Application, ApplicationStatus, ExpectedMobilityPeriod, ReviewStatus,  ApplicationHistoryItem } from '../../models/application.model';
 import { UserRole } from '../../models/user.model';
 import { ApplicationService } from '../../services/application.service';
 
-import { ModificationHistory } from './modification-history/modification-history';
+// import { ModificationHistory } from './modification-history/modification-history';
 
 type ReviewType =
     | 'bm_create_application'
@@ -25,7 +26,7 @@ type ReviewType =
         CommonModule,
         RouterLink,
         ReactiveFormsModule,
-        ModificationHistory
+        // ModificationHistory
     ],
     templateUrl: './application-detail.html',
     styleUrl: './application-detail.css'

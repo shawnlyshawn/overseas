@@ -16,13 +16,12 @@ export class AuthService {
     constructor(private readonly http: HttpClient) {}
 
     login(body: LoginRequest): Observable<ApiResponse<LoginResponseData>> {
-        return this.http
-            .post<ApiResponse<LoginResponseData>>(`${this.apiUrl}/login`, body)
-            .pipe(
-                tap((response) => {
-                    this.saveAuthData(response.data);
-                })
-            );
+        return this.http.post<ApiResponse<LoginResponseData>>(`${this.apiUrl}/login`, body).pipe(
+            tap((response) => {
+                localStorage.setItem(this.tokenKey, response.data.token);
+                localStorage.setItem(this.userKey, JSON.stringify(response.data.user));
+            })
+        );
     }
 
     logout(): void {
@@ -51,10 +50,5 @@ export class AuthService {
 
     isLoggedIn(): boolean {
         return this.getToken() !== null;
-    }
-
-    private saveAuthData(data: LoginResponseData): void {
-        localStorage.setItem(this.tokenKey, data.token);
-        localStorage.setItem(this.userKey, JSON.stringify(data.user));
     }
 }

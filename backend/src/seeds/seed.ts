@@ -337,7 +337,7 @@ const applications = [
                 caFoscariCourseCredits: 6,
 
                 result: {
-                    score: '30L',
+                    score: '29',
                     examDate: new Date('2025-06-07'),
                 },
             },

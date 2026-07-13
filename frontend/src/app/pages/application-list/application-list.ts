@@ -2,7 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService } from '../../services/auth.service'
+
 import { Application, ApplicationStatus, ExpectedMobilityPeriod, ReviewStatus } from '../../models/application.model';
 import { UserRole } from '../../models/user.model';
 import { ApplicationService } from '../../services/application.service';

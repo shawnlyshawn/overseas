@@ -1,121 +1,115 @@
-# Overseas Mobility Management System
+# Overseas Mobility Application
 
-## Run the project with Docker
+## Run the Project with Docker
 
-### 1. Start Docker Desktop
+### Prerequisites
 
-Make sure Docker Desktop is running before starting the project.
+* Docker Desktop
+* Visual Studio Code
+* MongoDB Compass
 
-### 2. Open the project in VS Code
+### Start the Application
 
-Open the `overseas` project folder in Visual Studio Code.
+1. Start Docker Desktop.
 
-### 3. Open a new terminal
+2. Open the project folder in Visual Studio Code.
 
-Move to the project root directory.
-
-```bash
-cd path/to/overseas
-```
-
-Example for Windows PowerShell:
-
-```powershell
-cd C:\Users\westh\overseas
-```
-
-### 4. Reset the database
+3. Open a new terminal and run the following commands from the `overseas` project directory:
 
 ```bash
 docker compose down -v
 ```
 
-This removes the existing containers, network, and MongoDB volume.
-
-> This command deletes all existing MongoDB data.
-
-### 5. Build and start the containers
+Removes the existing containers and MongoDB volume to reset the database.
 
 ```bash
 docker compose up --build -d
 ```
 
-This builds and starts the MongoDB, backend, and frontend containers in the background.
-
-### 6. Insert seed data
+Builds the Docker images and starts the frontend, backend, and MongoDB containers.
 
 ```bash
 docker compose exec backend npm run seed
 ```
 
-### 7. Check the container status
+Inserts the seed data into MongoDB.
+
+4. Check that all containers are running:
 
 ```bash
 docker compose ps
 ```
 
-Make sure the MongoDB, backend, and frontend containers show `Up`.
+5. Connect to the database using MongoDB Compass.
 
-### 8. Check the backend logs
+6. Check the container logs if necessary:
 
 ```bash
 docker compose logs backend
 ```
 
-Check that the backend is running normally and connected to MongoDB.
-
-### 9. Check the frontend logs
-
 ```bash
 docker compose logs frontend
 ```
 
-Check that the Angular frontend was built successfully.
-
-### 10. Refresh MongoDB Compass
-
-Connect MongoDB Compass to:
+7. Open the application in a browser:
 
 ```text
-mongodb://localhost:27017/overseas
+http://localhost:4200
 ```
 
-Refresh the database after inserting the seed data.
+---
 
-## Application URLs
+## Stop the Application
 
-- Frontend: http://localhost:4200
-- Backend: http://localhost:3000
-- MongoDB: mongodb://localhost:27017/overseas
-
-Now you can use the application.
-
-## Stop the application
-
-Open a terminal in the project root directory and run:
+Run the following command from the project directory:
 
 ```bash
 docker compose down
 ```
 
-This stops and removes the containers and network, but keeps the MongoDB volume.
-
-## Run the application again
-
-When the database has already been initialized, run:
-
-```bash
-docker compose up -d
-```
-
-You do not need to insert the seed data again unless the MongoDB volume was deleted.
-
-## Reset the database again
-
-To completely reset the database:
+To stop the application and also delete the MongoDB volume:
 
 ```bash
 docker compose down -v
-docker compose up --build -d
-docker compose exec backend npm run seed
 ```
+
+---
+
+## Test User Accounts
+
+### Students
+
+#### Seohyun Park
+
+* **Role:** Student
+* **Email:** `student1@unive.it`
+* **Password:** `s`
+
+#### Inbeom Hwang
+
+* **Role:** Student
+* **Email:** `student2@unive.it`
+* **Password:** `s`
+
+### Referent Lecturers
+
+#### Heungmin Son
+
+* **Role:** Referent Lecturer
+* **Email:** `lecturer1@unive.it`
+* **Password:** `l`
+
+#### Minjae Kim
+
+* **Role:** Referent Lecturer
+* **Email:** `lecturer2@unive.it`
+* **Password:** `l`
+
+### Overseas Office Staff
+
+#### Kangin Lee
+
+* **Role:** Overseas Office Staff
+* **Email:** `staff1@unive.it`
+* **Password:** `s`
